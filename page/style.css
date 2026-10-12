@@ -136,6 +136,11 @@ select { max-width: 280px; }
 .hint { color: var(--muted); font-size: 12px; margin: 0; text-align: center; }
 .swatch.unused { opacity: 0.3; }
 .swatch.unused:hover, .swatch.unused[aria-pressed="true"] { opacity: 1; }
+/* Controls without a hint keep its space below them, so the inputs in a row still line up. */
+.hinted > label { align-items: start; }
+.hinted > label .hint { line-height: 16px; text-align: start; }
+.hinted > label:not(:has(.hint)) { padding-bottom: 20px; }
+.hinted > label.inline { padding-bottom: 26px; }
 .hint.notice { color: var(--accent); }
 kbd { font: inherit; padding: 0 4px; border: 1px solid var(--line); border-radius: 3px; background: var(--card); }
 /* Phones and tablets without a keyboard can't use them. */

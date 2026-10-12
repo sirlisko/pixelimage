@@ -194,7 +194,7 @@ export const FROM_IMAGE: Record<string, { name: string; bits?: number }> = {
 	"*image-9bit": { name: "From the image, 9-bit (Mega Drive)", bits: 3 },
 };
 
-/** How many colours a palette from the image has when Max colours is left empty. */
+/** How many colours a palette from the image has when Colours is left empty. */
 export const IMAGE_COLOURS = 16;
 
 export const isFromImage = (slug: string) => slug in FROM_IMAGE;
