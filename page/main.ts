@@ -2,7 +2,7 @@ import { squareCrop } from "../src/crop.ts";
 import type { Dither } from "../src/dither.ts";
 import { applyEdits, type Edits, editKey } from "../src/edits.ts";
 import { toGpl } from "../src/gpl.ts";
-import { darkest, outline as addOutline } from "../src/outline.ts";
+import { outline as addOutline } from "../src/outline.ts";
 import { fullRect, type Img, paint, type Rect, type Sprite } from "../src/image.ts";
 import { type Background, centredSquare, outputSize, type PaletteSource, renderer } from "../src/render.ts";
 import { downscale, fitWithin } from "../src/resize.ts";
@@ -13,6 +13,7 @@ import { history } from "./history.ts";
 import { editor } from "./editor.ts";
 import { download, png } from "./export.ts";
 import { decode, isProject, listenForFiles } from "./load.ts";
+import { wireOutline } from "./outline-picker.ts";
 import { renderOptions, wirePicker } from "./palette-picker.ts";
 import { FROM_IMAGE, IMAGE_COLOURS, isFromImage, paletteOf, rememberPalette } from "./palettes.ts";
 import {
@@ -39,7 +40,6 @@ const palette = $<HTMLSelectElement>("palette");
 const stretch = $<HTMLInputElement>("stretch");
 const dither = $<HTMLSelectElement>("dither");
 const cap = $<HTMLInputElement>("cap");
-const outline = $<HTMLSelectElement>("outline");
 const preview = $<HTMLCanvasElement>("preview");
 const square = $<HTMLInputElement>("square");
 const tolerance = $<HTMLInputElement>("tolerance");
@@ -103,6 +103,7 @@ const edit = editor(
 	},
 	past,
 );
+const outline = wireOutline($<HTMLSelectElement>("outline"), $("outline-colours"), schedule);
 const tools = wireTools(preview.closest(".editor") as HTMLElement, edit);
 
 const sizeGrid = wireGrid($<HTMLButtonElement>("grid-button"), $("grid"));
@@ -128,7 +129,7 @@ const project = (): Project | undefined =>
 		stretch: stretch.checked,
 		dither: dither.value as Dither,
 		cap: Number(cap.value) || 0,
-		outline: outline.value,
+		outline: outline.value(),
 		background: background(),
 		edits: packEdits(store),
 	};
@@ -163,7 +164,7 @@ const useColors = (next: string[]) => {
 	if (next.join() === colors.join()) return;
 	colors = next;
 	tools.setColors(colors);
-	outlineOptions(colors);
+	outline.setColors(colors);
 };
 
 const update = () => {
@@ -189,7 +190,7 @@ const update = () => {
 	const edits = currentEdits();
 	$<HTMLParagraphElement>("edits-elsewhere").hidden = edits.size > 0 || ![...store.values()].some((e) => e.size);
 	const edited = applyEdits(base, edits);
-	const ring = outlineIndex(colors);
+	const ring = outline.index();
 	sprite = ring === undefined ? edited : addOutline(edited, ring);
 	tools.showUsed(new Set(sprite.pixels));
 	preview.width = sprite.width;
@@ -202,27 +203,6 @@ const update = () => {
 
 const initialCrop = (img: Img) => (square.checked ? centredSquare(img) : fullRect(img));
 
-const outlineIndex = (colors: string[]) => {
-	if (!outline.value) return undefined;
-	return outline.value === "darkest" ? darkest(colors) : Number(outline.value);
-};
-
-/** "Darkest" follows the palette; a picked colour is an index, so it can't carry over to another palette. */
-const outlineOptions = (colors: string[]) => {
-	const keep = outline.value === "darkest" || (outline.value !== "" && Number(outline.value) < colors.length);
-	const previous = keep ? outline.value : "";
-	outline.replaceChildren(
-		new Option("None", ""),
-		new Option("Darkest colour", "darkest"),
-		...colors.map((hex, i) => {
-			const option = new Option(hex, String(i));
-			option.style.background = hex;
-			return option;
-		}),
-	);
-	outline.value = previous;
-};
-
 const usePalette = (picked: string) => {
 	slug = picked;
 	renderOptions(palette, slug);
@@ -230,7 +210,7 @@ const usePalette = (picked: string) => {
 };
 renderOptions(palette, slug);
 tools.setColors(colors);
-outlineOptions(colors);
+outline.setColors(colors);
 
 // Big photos are shrunk once on load: the output is at most 256px, and shrinking a 24 MP photo on every crop drag
 // is too slow to follow the pointer. Crops and background clicks are in the shrunk image's pixels.
@@ -249,7 +229,7 @@ const applySettings = (p: Project) => {
 	tolerance.value = String(Math.round((p.background ?? NO_BACKGROUND).tolerance * 100));
 	if (!isFromImage(p.slug)) rememberPalette(p.slug, p.palette);
 	usePalette(p.slug);
-	outline.value = p.outline ?? "";
+	outline.setValue(p.outline ?? "");
 };
 
 /** Shows an image, with the settings, crop and edits of a saved project, or fresh ones. */

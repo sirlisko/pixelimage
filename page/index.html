@@ -75,7 +75,12 @@
 				<label class="inline"><input id="stretch" type="checkbox" checked> Stretch contrast</label>
 			</fieldset>
 			<fieldset>
-				<label>Outline <select id="outline"></select></label>
+				<label>Outline <select id="outline">
+					<option value="">None</option>
+					<option value="darkest">Darkest colour</option>
+					<option value="colour">Pick a colour…</option>
+				</select></label>
+				<div id="outline-colours" class="swatches outline-colours" role="group" aria-label="Outline colour" hidden></div>
 				<label>Background tolerance <input id="tolerance" type="range" min="1" max="30" value="10"></label>
 				<button id="clear-background" type="button" disabled>Restore background</button>
 				<label class="inline"><input id="square" type="checkbox" checked> Square crop</label>
