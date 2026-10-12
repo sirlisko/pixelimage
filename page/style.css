@@ -75,6 +75,7 @@ body.dragging .drop, body.dragging .stage { border-color: var(--accent); }
 /* Transparent pixels show as a checkerboard, like in an image editor. */
 .canvas { position: relative; width: min(512px, 100%); line-height: 0; }
 .overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.mirror-axis { background: linear-gradient(to right, transparent calc(50% - 1px), var(--accent) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)); opacity: 0.7; }
 /* Mid grey at half strength shows on both light and dark pixels. */
 .grid {
 	background-image:

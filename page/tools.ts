@@ -31,6 +31,14 @@ export const wireTools = (root: HTMLElement, edit: ReturnType<typeof editor>) =>
 	for (const b of toolButtons) b.addEventListener("click", () => useTool(b.dataset.tool as Tool));
 	root.querySelector("#undo")?.addEventListener("click", () => edit.undo());
 	root.querySelector("#clear-edits")?.addEventListener("click", () => edit.clear());
+	const mirror = root.querySelector("#mirror-button") as HTMLButtonElement;
+	const axis = root.querySelector("#mirror-axis") as HTMLElement;
+	mirror.addEventListener("click", () => {
+		const on = mirror.getAttribute("aria-pressed") !== "true";
+		mirror.setAttribute("aria-pressed", String(on));
+		axis.hidden = !on;
+		edit.setMirror(on);
+	});
 
 	window.addEventListener("keydown", (e) => {
 		if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;

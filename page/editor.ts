@@ -1,4 +1,4 @@
-import { type Edits, line, region } from "../src/edits.ts";
+import { type Edits, line, mirrorIndex, region } from "../src/edits.ts";
 import { CLEAR, type Sprite } from "../src/image.ts";
 
 export type Tool = "pencil" | "eraser" | "fill" | "picker" | "background";
@@ -18,6 +18,7 @@ interface Hooks {
 export const editor = (canvas: HTMLCanvasElement, hooks: Hooks) => {
 	let tool: Tool = "pencil";
 	let color = 0;
+	let mirror = false;
 	const history = new WeakMap<Edits, Edits[]>();
 
 	const snapshot = () => {
@@ -51,19 +52,25 @@ export const editor = (canvas: HTMLCanvasElement, hooks: Hooks) => {
 		snapshot();
 		const edits = hooks.edits();
 		const ink = tool === "eraser" ? CLEAR : color;
+		const put = (i: number) => {
+			edits.set(i, ink);
+			if (mirror) edits.set(mirrorIndex(i, sprite.width), ink);
+		};
 		if (tool === "fill") {
-			for (const i of region(sprite, start)) edits.set(i, ink);
+			// Both regions are found before painting, so filling one can't change what the other covers.
+			const regions = [region(sprite, start), mirror ? region(sprite, mirrorIndex(start, sprite.width)) : []];
+			for (const i of regions.flat()) edits.set(i, ink);
 			hooks.changed();
 			return;
 		}
-		edits.set(start, ink);
+		put(start);
 		hooks.changed();
 		canvas.setPointerCapture(e.pointerId);
 		let last = at;
 		const drag = (m: PointerEvent) => {
 			const to = pixelAt(m, sprite);
 			if (!to) return;
-			for (const [x, y] of line(last.x, last.y, to.x, to.y)) edits.set(y * sprite.width + x, ink);
+			for (const [x, y] of line(last.x, last.y, to.x, to.y)) put(y * sprite.width + x);
 			last = to;
 			hooks.changed();
 		};
@@ -84,6 +91,9 @@ export const editor = (canvas: HTMLCanvasElement, hooks: Hooks) => {
 		},
 		setColor(index: number) {
 			color = index;
+		},
+		setMirror(on: boolean) {
+			mirror = on;
 		},
 		undo() {
 			const edits = hooks.edits();

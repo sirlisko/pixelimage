@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { applyEdits, editKey, line, region } from "../src/edits.ts";
+import { applyEdits, editKey, line, mirrorIndex, region } from "../src/edits.ts";
 import { CLEAR, type Sprite } from "../src/image.ts";
 
 const sprite = (rows: number[][]): Sprite => ({
@@ -53,4 +53,11 @@ describe("line", () => {
 		]);
 		expect(line(2, 2, 2, 2)).toEqual([[2, 2]]);
 	});
+});
+
+test("mirrorIndex reflects across the vertical middle", () => {
+	// Row 1 of a 4-wide sprite: pixels 4..7.
+	expect([4, 5, 6, 7].map((i) => mirrorIndex(i, 4))).toEqual([7, 6, 5, 4]);
+	// The middle column of an odd width mirrors onto itself.
+	expect(mirrorIndex(1, 3)).toBe(1);
 });

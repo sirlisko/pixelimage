@@ -95,6 +95,7 @@
 				<div class="canvas">
 					<canvas id="preview" width="32" height="32" data-tool="pencil"></canvas>
 					<div id="grid" class="overlay grid" hidden></div>
+					<div id="mirror-axis" class="overlay mirror-axis" hidden></div>
 					<canvas id="compare" class="overlay" hidden></canvas>
 				</div>
 				<div class="tools" role="toolbar" aria-label="Edit pixels">
@@ -107,6 +108,7 @@
 					<button id="undo" type="button" title="Undo (⌘/Ctrl+Z)">Undo</button>
 					<button id="clear-edits" type="button">Clear edits</button>
 					<span class="sep"></span>
+					<button id="mirror-button" type="button" aria-pressed="false" title="Paint both halves at once, mirrored left to right">Mirror</button>
 					<button id="grid-button" type="button" aria-pressed="false" title="Show a line between pixels">Grid</button>
 					<button id="compare-button" type="button" title="Hold to see the photo (hold C)">Compare</button>
 				</div>

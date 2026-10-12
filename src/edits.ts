@@ -68,3 +68,9 @@ export const line = (x0: number, y0: number, x1: number, y1: number) => {
 		}
 	}
 };
+
+/** The pixel in the same row, the same distance from the other side, for mirrored drawing. */
+export const mirrorIndex = (i: number, width: number) => {
+	const x = i % width;
+	return i - x + (width - 1 - x);
+};
