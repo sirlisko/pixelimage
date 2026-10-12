@@ -1,7 +1,7 @@
 import { type Edits, line, region } from "../src/edits.ts";
 import { CLEAR, type Sprite } from "../src/image.ts";
 
-export type Tool = "pencil" | "eraser" | "fill" | "picker";
+export type Tool = "pencil" | "eraser" | "fill" | "picker" | "background";
 
 interface Hooks {
 	/** The sprite as shown, edits included. */
@@ -10,6 +10,8 @@ interface Hooks {
 	edits: () => Edits;
 	changed: () => void;
 	picked: (index: number) => void;
+	/** The background tool was used at this point, as a share (0–1) of the sprite's width and height. */
+	background: (x: number, y: number) => void;
 }
 
 /** Paints on the preview canvas. Each stroke, fill or clear is one undo step. */
@@ -38,6 +40,10 @@ export const editor = (canvas: HTMLCanvasElement, hooks: Hooks) => {
 		if (!sprite || !at) return;
 		e.preventDefault();
 		const start = at.y * sprite.width + at.x;
+		if (tool === "background") {
+			hooks.background((at.x + 0.5) / sprite.width, (at.y + 0.5) / sprite.height);
+			return;
+		}
 		if (tool === "picker") {
 			if (sprite.pixels[start] !== CLEAR) hooks.picked(sprite.pixels[start]);
 			return;

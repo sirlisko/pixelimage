@@ -43,6 +43,8 @@
 				<label class="inline"><input id="stretch" type="checkbox" checked> Stretch contrast</label>
 			</fieldset>
 			<fieldset>
+				<label>Background tolerance <input id="tolerance" type="range" min="1" max="30" value="10"></label>
+				<button id="clear-background" type="button" disabled>Restore background</button>
 				<label class="inline"><input id="square" type="checkbox" checked> Square crop</label>
 				<button id="reset-crop" type="button">Reset crop</button>
 				<label class="file button">Open image or project<input id="replace" type="file" accept="image/*,.json"></label>
@@ -63,12 +65,13 @@
 					<button type="button" data-tool="eraser" aria-pressed="false" title="Eraser (E)">Eraser</button>
 					<button type="button" data-tool="fill" aria-pressed="false" title="Fill (G)">Fill</button>
 					<button type="button" data-tool="picker" aria-pressed="false" title="Pick a colour (I)">Picker</button>
+					<button type="button" data-tool="background" aria-pressed="false" title="Click the background to remove it (W)">Background</button>
 					<span class="sep"></span>
 					<button id="undo" type="button" title="Undo (⌘/Ctrl+Z)">Undo</button>
 					<button id="clear-edits" type="button">Clear edits</button>
 				</div>
 				<div id="swatches" class="swatches"></div>
-				<p class="hint">Edits are kept per crop, size and palette, so changing other settings keeps them.</p>
+				<p class="hint">Edits are kept per crop, size and palette, so changing other settings keeps them. Use Background, then click the background, to make it transparent.</p>
 			</div>
 		</div>
 		<fieldset class="export">

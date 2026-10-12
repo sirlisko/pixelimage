@@ -1,7 +1,7 @@
 import type { Tool, editor } from "./editor.ts";
 import { renderSwatches } from "./swatches.ts";
 
-const KEYS: Record<string, Tool> = { b: "pencil", e: "eraser", g: "fill", i: "picker" };
+const KEYS: Record<string, Tool> = { b: "pencil", e: "eraser", g: "fill", i: "picker", w: "background" };
 
 /** Tool buttons, swatches and shortcuts (Aseprite's letters) for an editor. Returns a function to redraw swatches. */
 export const wireTools = (root: HTMLElement, edit: ReturnType<typeof editor>) => {

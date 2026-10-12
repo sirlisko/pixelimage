@@ -1,6 +1,7 @@
 import type { Dither } from "../src/dither.ts";
 import type { Edits } from "../src/edits.ts";
 import type { Rect } from "../src/image.ts";
+import type { Background } from "../src/render.ts";
 import type { Palette } from "./palettes.ts";
 
 /** Everything needed to pick up where you left off. */
@@ -17,8 +18,11 @@ export interface Project {
 	palette: Palette;
 	stretch: boolean;
 	dither: Dither;
+	background: Background;
 	edits: [string, [number, number][]][];
 }
+
+export const NO_BACKGROUND: Background = { seeds: [], tolerance: 0.1 };
 
 export const packEdits = (store: Map<string, Edits>): Project["edits"] =>
 	[...store].filter(([, edits]) => edits.size).map(([key, edits]) => [key, [...edits]]);
@@ -70,6 +74,12 @@ export const toFile = async (project: Project) =>
 const isRect = (r: unknown): r is Rect =>
 	typeof r === "object" && r !== null && ["x", "y", "width", "height"].every((k) => Number.isFinite((r as never)[k]));
 
+const readBackground = (b: unknown): Background => {
+	const { seeds, tolerance } = (b ?? {}) as Partial<Background>;
+	if (!Array.isArray(seeds) || !Number.isFinite(tolerance)) return NO_BACKGROUND;
+	return { seeds: seeds.filter((p) => Number.isFinite(p?.x) && Number.isFinite(p?.y)), tolerance: tolerance as number };
+};
+
 /** Reads a project file, refusing anything that isn't one rather than half-loading it. */
 export const fromFile = async (text: string): Promise<Project> => {
 	const bad = new Error("That file isn't a pixelimage project.");
@@ -103,6 +113,7 @@ export const fromFile = async (text: string): Promise<Project> => {
 		palette: { name: String(palette.name || data.slug), colors: palette.colors },
 		stretch: Boolean(data.stretch),
 		dither: (["none", "floyd", "bayer"].includes(data.dither as string) ? data.dither : "none") as Dither,
+		background: readBackground(data.background),
 		edits: data.edits as Project["edits"],
 	};
 };

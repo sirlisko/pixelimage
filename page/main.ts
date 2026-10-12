@@ -3,7 +3,7 @@ import type { Dither } from "../src/dither.ts";
 import { applyEdits, type Edits, editKey } from "../src/edits.ts";
 import { toGpl } from "../src/gpl.ts";
 import { fullRect, type Img, paint, type Rect, type Sprite } from "../src/image.ts";
-import { centredSquare, outputSize, renderer } from "../src/render.ts";
+import { type Background, centredSquare, outputSize, renderer } from "../src/render.ts";
 import { cropper } from "./crop.ts";
 import { editor } from "./editor.ts";
 import { download, png } from "./export.ts";
@@ -14,6 +14,7 @@ import {
 	EXTENSION,
 	fromFile,
 	loadCurrent,
+	NO_BACKGROUND,
 	packEdits,
 	type Project,
 	saveCurrent,
@@ -34,6 +35,8 @@ const stretch = $<HTMLInputElement>("stretch");
 const dither = $<HTMLSelectElement>("dither");
 const preview = $<HTMLCanvasElement>("preview");
 const square = $<HTMLInputElement>("square");
+const tolerance = $<HTMLInputElement>("tolerance");
+const clearBackground = $<HTMLButtonElement>("clear-background");
 
 let slug = "endesga-32";
 renderOptions(palette, slug);
@@ -43,6 +46,7 @@ let source: { img: Img; blob: Blob; name: string; url: string } | undefined;
 let crop: Rect = { x: 0, y: 0, width: 1, height: 1 };
 let sprite: Sprite | undefined;
 let store = new Map<string, Edits>();
+let seeds: Background["seeds"] = [];
 
 const chosenSize = () => (size.value === "custom" ? Math.min(256, Math.max(4, Number(custom.value) || 32)) : Number(size.value));
 
@@ -70,6 +74,10 @@ const edit = editor(preview, {
 	edits: currentEdits,
 	changed: schedule,
 	picked: (index) => tools.picked(index),
+	background: (x, y) => {
+		seeds = [...seeds, { x: crop.x + x * crop.width, y: crop.y + y * crop.height }];
+		schedule();
+	},
 });
 const tools = wireTools(preview.parentElement as HTMLElement, edit);
 tools.setColors(paletteOf(slug).colors);
@@ -86,6 +94,7 @@ const project = (): Project | undefined =>
 		palette: paletteOf(slug),
 		stretch: stretch.checked,
 		dither: dither.value as Dither,
+		background: background(),
 		edits: packEdits(store),
 	};
 
@@ -98,8 +107,11 @@ const autosave = () => {
 	}, 500);
 };
 
+const background = (): Background => ({ seeds, tolerance: Number(tolerance.value) / 100 });
+
 const update = () => {
 	$<HTMLLabelElement>("custom-field").hidden = size.value !== "custom";
+	clearBackground.disabled = !seeds.length;
 	if (!source) return;
 	const { colors } = paletteOf(slug);
 	const base = render(source.img, {
@@ -108,6 +120,7 @@ const update = () => {
 		colors,
 		stretch: stretch.checked,
 		dither: dither.value as Dither,
+		background: background(),
 	});
 	sprite = applyEdits(base, currentEdits());
 	preview.width = sprite.width;
@@ -125,6 +138,8 @@ const usePalette = (picked: string) => {
 	tools.setColors(paletteOf(slug).colors);
 };
 
+let loads = 0;
+
 const applySettings = (p: Project) => {
 	square.checked = p.square;
 	crops.setSquare(p.square);
@@ -132,11 +147,10 @@ const applySettings = (p: Project) => {
 	custom.value = String(p.custom);
 	stretch.checked = p.stretch;
 	dither.value = p.dither;
+	tolerance.value = String(Math.round((p.background ?? NO_BACKGROUND).tolerance * 100));
 	rememberPalette(p.slug, p.palette);
 	usePalette(p.slug);
 };
-
-let loads = 0;
 
 /** Shows an image, with the settings, crop and edits of a saved project, or fresh ones. */
 const show = async (blob: Blob, name: string, saved?: Project) => {
@@ -155,6 +169,7 @@ const show = async (blob: Blob, name: string, saved?: Project) => {
 	if (source) URL.revokeObjectURL(source.url);
 	source = { img, blob, name, url: URL.createObjectURL(blob) };
 	store = saved ? unpackEdits(saved.edits) : new Map();
+	seeds = saved?.background?.seeds ?? [];
 	crop = saved?.crop ?? initialCrop(img);
 	crops.show(source.url, img, crop);
 	empty.hidden = true;
@@ -176,6 +191,10 @@ $<HTMLFormElement>("controls").addEventListener("input", (e) => {
 });
 wirePicker(palette, $("lospec"), $<HTMLInputElement>("lospec-slug"), (picked) => {
 	usePalette(picked);
+	schedule();
+});
+clearBackground.addEventListener("click", () => {
+	seeds = [];
 	schedule();
 });
 square.addEventListener("change", () => {
