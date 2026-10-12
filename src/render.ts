@@ -1,3 +1,4 @@
+import type { Dither } from "./dither.ts";
 import type { Img, Rect, Sprite } from "./image.ts";
 import { prepare, quantize } from "./quantize.ts";
 import { downscale } from "./resize.ts";
@@ -8,6 +9,7 @@ export interface Settings {
 	size: number;
 	colors: string[];
 	stretch: boolean;
+	dither: Dither;
 }
 
 export const outputSize = ({ crop, size }: Pick<Settings, "crop" | "size">) => ({
@@ -30,6 +32,6 @@ export const renderer = () => {
 		if (last?.source !== source || last.key !== key) {
 			last = { source, key, small: downscale(source, settings.crop, width, height) };
 		}
-		return quantize(prepare(last.small, settings), settings.colors);
+		return quantize(prepare(last.small, settings), settings.colors, settings.dither);
 	};
 };

@@ -1,4 +1,5 @@
 import { fromHex, LINEAR, type Lab, oklab, oklabLinear, isRamp } from "./color.ts";
+import { bayer, type Dither, floyd, plainPixels } from "./dither.ts";
 import { CLEAR, type Img, OPAQUE, type Sprite } from "./image.ts";
 
 /** OKLab per pixel (three floats each), with transparent pixels marked so they're left out. */
@@ -43,6 +44,8 @@ const stretchLightness = (lab: Float32Array, opaque: Uint8Array) => {
 
 export interface Matcher {
 	ramp: boolean;
+	/** How far apart neighbouring palette colours are in lightness, which sets how strongly Bayer dithering nudges. */
+	step: number;
 	/** Palette colours in OKLab. For a ramp only lightness is used. */
 	labs: Lab[];
 	/** Moves a pixel into the palette's space: for a ramp, 0–1 lightness onto its darkest-to-lightest range. */
@@ -58,6 +61,7 @@ export const matcher = (colors: string[]): Matcher => {
 		const max = Math.max(...levels);
 		return {
 			ramp: true,
+			step: (max - min) / Math.max(1, levels.length - 1),
 			labs,
 			target: (l) => [min + l * (max - min), 0, 0],
 			nearest: (l) => {
@@ -69,6 +73,8 @@ export const matcher = (colors: string[]): Matcher => {
 	}
 	return {
 		ramp: false,
+		// Roughly the lightness gap between colours if the palette were spread evenly over the colour cube.
+		step: 1 / Math.cbrt(labs.length) / 2,
 		labs,
 		target: (l, a, b) => [l, a, b],
 		nearest: (l, a, b) => {
@@ -86,11 +92,20 @@ export const matcher = (colors: string[]): Matcher => {
 	};
 };
 
-export const quantize = ({ width, height, lab, opaque }: Prepared, colors: string[]): Sprite => {
+// Full-strength error diffusion speckles full-colour palettes, where a close colour is almost always available.
+const COLOUR_DAMP = 0.6;
+
+export const quantize = (prepared: Prepared, colors: string[], dither: Dither = "none"): Sprite => {
+	const { width, height, lab, opaque } = prepared;
 	const match = matcher(colors);
-	const pixels = new Int16Array(width * height).fill(CLEAR);
-	for (let i = 0; i < pixels.length; i++) {
-		if (opaque[i]) pixels[i] = match.nearest(...match.target(lab[i * 3], lab[i * 3 + 1], lab[i * 3 + 2]));
+	const target = new Float32Array(lab.length);
+	for (let i = 0; i < opaque.length; i++) {
+		if (opaque[i]) target.set(match.target(lab[i * 3], lab[i * 3 + 1], lab[i * 3 + 2]), i * 3);
 	}
+	const pixels = new Int16Array(width * height).fill(CLEAR);
+	// Without dithering every pixel is plain, so Floyd–Steinberg passes no error on and just picks the nearest.
+	const plain = dither === "none" ? opaque : plainPixels(prepared);
+	if (dither === "bayer") bayer(prepared, target, plain, match.nearest, match.step, pixels);
+	else floyd(prepared, target, plain, match.nearest, match.labs, match.ramp ? 1 : COLOUR_DAMP, pixels);
 	return { width, height, pixels };
 };

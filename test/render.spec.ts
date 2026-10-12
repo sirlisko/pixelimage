@@ -20,7 +20,7 @@ describe("render", () => {
 			[K, W],
 			[W, K],
 		]);
-		const sprite = renderer()(source, { crop: centredSquare(source), size: 2, colors: GAMEBOY, stretch: true });
+		const sprite = renderer()(source, { crop: centredSquare(source), size: 2, colors: GAMEBOY, stretch: true, dither: "none" });
 		expect([...sprite.pixels]).toEqual([0, 3, 3, 0]);
 	});
 });

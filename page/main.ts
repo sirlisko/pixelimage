@@ -1,4 +1,5 @@
 import { squareCrop } from "../src/crop.ts";
+import type { Dither } from "../src/dither.ts";
 import { fullRect, type Img, paint, type Rect } from "../src/image.ts";
 import { centredSquare, renderer } from "../src/render.ts";
 import { cropper } from "./crop.ts";
@@ -14,6 +15,7 @@ const size = $<HTMLSelectElement>("size");
 const custom = $<HTMLInputElement>("custom");
 const palette = $<HTMLSelectElement>("palette");
 const stretch = $<HTMLInputElement>("stretch");
+const dither = $<HTMLSelectElement>("dither");
 const preview = $<HTMLCanvasElement>("preview");
 const square = $<HTMLInputElement>("square");
 
@@ -43,7 +45,13 @@ const update = () => {
 	$<HTMLLabelElement>("custom-field").hidden = size.value !== "custom";
 	if (!source) return;
 	const colors = paletteOf(palette.value).colors;
-	const sprite = render(source, { crop, size: chosenSize(), colors, stretch: stretch.checked });
+	const sprite = render(source, {
+		crop,
+		size: chosenSize(),
+		colors,
+		stretch: stretch.checked,
+		dither: dither.value as Dither,
+	});
 	preview.width = sprite.width;
 	preview.height = sprite.height;
 	const img = paint(sprite, colors);
