@@ -1,0 +1,26 @@
+import { describe, expect, test } from "vitest";
+import { centredSquare, outputSize, renderer } from "../src/render.ts";
+import { image } from "./image.ts";
+import { GAMEBOY } from "./palettes.ts";
+
+const K = [0, 0, 0, 255] as [number, number, number, number];
+const W = [255, 255, 255, 255] as [number, number, number, number];
+
+describe("render", () => {
+	test("crops a wide image to its middle square", () => {
+		expect(centredSquare(image([[K, W, W, K]]))).toEqual({ x: 1.5, y: 0, width: 1, height: 1 });
+	});
+
+	test("keeps the crop's aspect ratio", () => {
+		expect(outputSize({ crop: { x: 0, y: 0, width: 200, height: 100 }, size: 32 })).toEqual({ width: 32, height: 16 });
+	});
+
+	test("turns an image into palette indexes", () => {
+		const source = image([
+			[K, W],
+			[W, K],
+		]);
+		const sprite = renderer()(source, { crop: centredSquare(source), size: 2, colors: GAMEBOY, stretch: true });
+		expect([...sprite.pixels]).toEqual([0, 3, 3, 0]);
+	});
+});

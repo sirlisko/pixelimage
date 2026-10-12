@@ -31,3 +31,48 @@ a { color: var(--accent); }
 h1 { font-size: 22px; margin: 0; letter-spacing: -0.02em; }
 header p { color: var(--muted); margin: 4px 0 20px; }
 [hidden] { display: none !important; }
+#status { color: var(--muted); min-height: 1.5em; margin: 0 0 8px; }
+fieldset { border: 0; padding: 0; margin: 0 0 16px; display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; }
+label { display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 12px; }
+label.inline { flex-direction: row; align-items: center; gap: 6px; color: var(--fg); font-size: 14px; padding-bottom: 6px; }
+select, input[type="number"], input[type="text"], button {
+	font: inherit;
+	color: var(--fg);
+	background: var(--card);
+	border: 1px solid var(--line);
+	border-radius: 4px;
+	padding: 6px 8px;
+}
+input[type="number"] { width: 90px; }
+input[type="checkbox"] { accent-color: var(--accent); }
+button { cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button:disabled { opacity: 0.4; cursor: default; }
+.drop {
+	display: grid;
+	place-items: center;
+	min-height: 320px;
+	padding: 24px;
+	border: 2px dashed var(--line);
+	border-radius: 8px;
+	text-align: center;
+	color: var(--muted);
+}
+body.dragging .drop, body.dragging .stage { border-color: var(--accent); }
+.file { display: inline; color: var(--accent); font-size: inherit; text-decoration: underline; cursor: pointer; }
+.file input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.file:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.stage {
+	display: grid;
+	place-items: center;
+	padding: 16px;
+	border: 2px solid transparent;
+	border-radius: 8px;
+	background: var(--card);
+}
+/* Transparent pixels show as a checkerboard, like in an image editor. */
+#preview {
+	width: min(512px, 100%);
+	image-rendering: pixelated;
+	background: repeating-conic-gradient(var(--line) 0 25%, transparent 0 50%) 0 0 / 16px 16px;
+}

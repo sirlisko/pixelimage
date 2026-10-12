@@ -2,7 +2,7 @@
 export interface Img {
 	width: number;
 	height: number;
-	data: Uint8ClampedArray;
+	data: Uint8ClampedArray<ArrayBuffer>;
 }
 
 export interface Rect {
