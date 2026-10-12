@@ -122,3 +122,5 @@ select { max-width: 280px; }
 .swatch { width: 24px; height: 24px; padding: 0; border: 1px solid var(--line); border-radius: 4px; }
 .swatch[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 1px; }
 .hint { color: var(--muted); font-size: 12px; margin: 0; text-align: center; }
+.swatch.unused { opacity: 0.3; }
+.swatch.unused:hover, .swatch.unused[aria-pressed="true"] { opacity: 1; }

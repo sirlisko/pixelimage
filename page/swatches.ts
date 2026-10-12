@@ -15,3 +15,10 @@ export const renderSwatches = (root: HTMLElement, colors: string[], chosen: numb
 		}),
 	);
 };
+
+/** Dims the colours the image doesn't use, so you can see what the conversion and the colour cap picked. */
+export const markUsed = (root: HTMLElement, used: Set<number>) => {
+	root.querySelectorAll<HTMLButtonElement>(".swatch").forEach((button, i) => {
+		button.classList.toggle("unused", !used.has(i));
+	});
+};

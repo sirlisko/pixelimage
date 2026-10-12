@@ -136,6 +136,7 @@ const update = () => {
 	const edited = applyEdits(base, currentEdits());
 	const ring = outlineIndex(colors);
 	sprite = ring === undefined ? edited : addOutline(edited, ring);
+	tools.showUsed(new Set(sprite.pixels));
 	preview.width = sprite.width;
 	preview.height = sprite.height;
 	const img = paint(sprite, colors);
