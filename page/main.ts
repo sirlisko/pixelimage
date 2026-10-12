@@ -9,6 +9,7 @@ import { downscale, fitWithin } from "../src/resize.ts";
 import { wireCompare } from "./compare.ts";
 import { cropper } from "./crop.ts";
 import { wireGrid } from "./grid.ts";
+import { history } from "./history.ts";
 import { editor } from "./editor.ts";
 import { download, png } from "./export.ts";
 import { decode, isProject, listenForFiles } from "./load.ts";
@@ -76,16 +77,32 @@ const currentEdits = () => {
 	return store.get(key) as Edits;
 };
 
-const edit = editor(preview, {
-	shown: () => sprite,
-	edits: currentEdits,
-	changed: schedule,
-	picked: (index) => tools.picked(index),
-	background: (x, y) => {
-		seeds = [...seeds, { x: crop.x + x * crop.width, y: crop.y + y * crop.height }];
-		schedule();
+const past = history();
+
+/** Changes the background clicks as one undo step. */
+const setSeeds = (next: Background["seeds"]) => {
+	const before = seeds;
+	past.record({
+		undo: () => {
+			seeds = before;
+			schedule();
+		},
+	});
+	seeds = next;
+	schedule();
+};
+
+const edit = editor(
+	preview,
+	{
+		shown: () => sprite,
+		edits: currentEdits,
+		changed: schedule,
+		picked: (index) => tools.picked(index),
+		background: (x, y) => setSeeds([...seeds, { x: crop.x + x * crop.width, y: crop.y + y * crop.height }]),
 	},
-});
+	past,
+);
 const tools = wireTools(preview.closest(".editor") as HTMLElement, edit);
 
 const sizeGrid = wireGrid($<HTMLButtonElement>("grid-button"), $("grid"));
@@ -250,6 +267,7 @@ const show = async (blob: Blob, name: string, saved?: Project) => {
 	if (source) URL.revokeObjectURL(source.url);
 	source = { img, blob, name, url: URL.createObjectURL(blob) };
 	store = saved ? unpackEdits(saved.edits) : new Map();
+	past.clear();
 	seeds = saved?.background?.seeds ?? [];
 	crop = saved?.crop ?? initialCrop(img);
 	crops.show(source.url, img, crop);
@@ -274,10 +292,7 @@ wirePicker(palette, $("lospec"), $<HTMLInputElement>("lospec-slug"), (picked) =>
 	usePalette(picked);
 	schedule();
 });
-clearBackground.addEventListener("click", () => {
-	seeds = [];
-	schedule();
-});
+clearBackground.addEventListener("click", () => setSeeds([]));
 square.addEventListener("change", () => {
 	crops.setSquare(square.checked);
 	if (square.checked) crops.set(squareCrop(crop));

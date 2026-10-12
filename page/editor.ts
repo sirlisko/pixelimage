@@ -1,5 +1,6 @@
 import { type Edits, line, mirrorIndex, region } from "../src/edits.ts";
 import { CLEAR, type Sprite } from "../src/image.ts";
+import type { History } from "./history.ts";
 
 export type Tool = "pencil" | "eraser" | "fill" | "picker" | "background";
 
@@ -14,18 +15,21 @@ interface Hooks {
 	background: (x: number, y: number) => void;
 }
 
-/** Paints on the preview canvas. Each stroke, fill or clear is one undo step. */
-export const editor = (canvas: HTMLCanvasElement, hooks: Hooks) => {
+/** Paints on the preview canvas. Each stroke, fill or clear is one undo step in `past`. */
+export const editor = (canvas: HTMLCanvasElement, hooks: Hooks, past: History) => {
 	let tool: Tool = "pencil";
 	let color = 0;
 	let mirror = false;
-	const history = new WeakMap<Edits, Edits[]>();
-
 	const snapshot = () => {
 		const edits = hooks.edits();
-		const stack = history.get(edits) ?? [];
-		stack.push(new Map(edits));
-		history.set(edits, stack);
+		const before = new Map(edits);
+		past.record({
+			edits,
+			undo: () => {
+				edits.clear();
+				for (const [i, index] of before) edits.set(i, index);
+			},
+		});
 	};
 
 	const pixelAt = (e: PointerEvent, sprite: Sprite) => {
@@ -96,11 +100,7 @@ export const editor = (canvas: HTMLCanvasElement, hooks: Hooks) => {
 			mirror = on;
 		},
 		undo() {
-			const edits = hooks.edits();
-			const previous = history.get(edits)?.pop();
-			if (!previous) return;
-			edits.clear();
-			for (const [i, index] of previous) edits.set(i, index);
+			past.undo(hooks.edits());
 			hooks.changed();
 		},
 		clear() {
