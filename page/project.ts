@@ -20,6 +20,8 @@ export interface Project {
 	dither: Dither;
 	/** At most this many palette colours, or 0 for no limit. */
 	cap: number;
+	/** The outline menu's value: "" for none, "darkest", or a palette index. */
+	outline: string;
 	background: Background;
 	edits: [string, [number, number][]][];
 }
@@ -116,6 +118,7 @@ export const fromFile = async (text: string): Promise<Project> => {
 		stretch: Boolean(data.stretch),
 		dither: (["none", "floyd", "bayer"].includes(data.dither as string) ? data.dither : "none") as Dither,
 		cap: Math.max(0, Math.floor(Number(data.cap) || 0)),
+		outline: /^(darkest|\d+)$/.test(String(data.outline)) ? String(data.outline) : "",
 		background: readBackground(data.background),
 		edits: data.edits as Project["edits"],
 	};

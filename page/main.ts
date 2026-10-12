@@ -2,6 +2,7 @@ import { squareCrop } from "../src/crop.ts";
 import type { Dither } from "../src/dither.ts";
 import { applyEdits, type Edits, editKey } from "../src/edits.ts";
 import { toGpl } from "../src/gpl.ts";
+import { darkest, outline as addOutline } from "../src/outline.ts";
 import { fullRect, type Img, paint, type Rect, type Sprite } from "../src/image.ts";
 import { type Background, centredSquare, outputSize, renderer } from "../src/render.ts";
 import { cropper } from "./crop.ts";
@@ -34,13 +35,13 @@ const palette = $<HTMLSelectElement>("palette");
 const stretch = $<HTMLInputElement>("stretch");
 const dither = $<HTMLSelectElement>("dither");
 const cap = $<HTMLInputElement>("cap");
+const outline = $<HTMLSelectElement>("outline");
 const preview = $<HTMLCanvasElement>("preview");
 const square = $<HTMLInputElement>("square");
 const tolerance = $<HTMLInputElement>("tolerance");
 const clearBackground = $<HTMLButtonElement>("clear-background");
 
 let slug = "endesga-32";
-renderOptions(palette, slug);
 
 const render = renderer();
 let source: { img: Img; blob: Blob; name: string; url: string } | undefined;
@@ -81,7 +82,6 @@ const edit = editor(preview, {
 	},
 });
 const tools = wireTools(preview.parentElement as HTMLElement, edit);
-tools.setColors(paletteOf(slug).colors);
 
 const project = (): Project | undefined =>
 	source && {
@@ -96,6 +96,7 @@ const project = (): Project | undefined =>
 		stretch: stretch.checked,
 		dither: dither.value as Dither,
 		cap: Number(cap.value) || 0,
+		outline: outline.value,
 		background: background(),
 		edits: packEdits(store),
 	};
@@ -132,7 +133,9 @@ const update = () => {
 		cap: Number(cap.value) || 0,
 		background: background(),
 	});
-	sprite = applyEdits(base, currentEdits());
+	const edited = applyEdits(base, currentEdits());
+	const ring = outlineIndex(colors);
+	sprite = ring === undefined ? edited : addOutline(edited, ring);
 	preview.width = sprite.width;
 	preview.height = sprite.height;
 	const img = paint(sprite, colors);
@@ -142,11 +145,34 @@ const update = () => {
 
 const initialCrop = (img: Img) => (square.checked ? centredSquare(img) : fullRect(img));
 
+const outlineIndex = (colors: string[]) => {
+	if (!outline.value) return undefined;
+	return outline.value === "darkest" ? darkest(colors) : Number(outline.value);
+};
+
+/** "Darkest" follows the palette; a picked colour is an index, so it can't carry over to another palette. */
+const outlineOptions = (colors: string[]) => {
+	const keep = outline.value === "darkest" || (outline.value !== "" && Number(outline.value) < colors.length);
+	const previous = keep ? outline.value : "";
+	outline.replaceChildren(
+		new Option("None", ""),
+		new Option("Darkest colour", "darkest"),
+		...colors.map((hex, i) => {
+			const option = new Option(hex, String(i));
+			option.style.background = hex;
+			return option;
+		}),
+	);
+	outline.value = previous;
+};
+
 const usePalette = (picked: string) => {
 	slug = picked;
 	renderOptions(palette, slug);
 	tools.setColors(paletteOf(slug).colors);
+	outlineOptions(paletteOf(slug).colors);
 };
+usePalette(slug);
 
 let loads = 0;
 
@@ -161,6 +187,7 @@ const applySettings = (p: Project) => {
 	tolerance.value = String(Math.round((p.background ?? NO_BACKGROUND).tolerance * 100));
 	rememberPalette(p.slug, p.palette);
 	usePalette(p.slug);
+	outline.value = p.outline ?? "";
 };
 
 /** Shows an image, with the settings, crop and edits of a saved project, or fresh ones. */
