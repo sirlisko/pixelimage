@@ -54,11 +54,25 @@ const request = async <T>(mode: IDBTransactionMode, run: (store: IDBObjectStore)
 	}).finally(() => conn.close());
 };
 
-/** Storage can be unavailable (private windows, blocked site data), so failures leave the page working without it. */
-export const saveCurrent = (project: Project) => request("readwrite", (s) => s.put(project, CURRENT)).catch(() => {});
+interface Stored extends Omit<Project, "image"> {
+	image: Blob | { type: string; bytes: ArrayBuffer };
+}
 
-export const loadCurrent = () =>
-	request<Project | undefined>("readonly", (s) => s.get(CURRENT)).catch(() => undefined);
+/**
+ * Storage can be unavailable (private windows, blocked site data), so failures leave the page working without it.
+ * The image is stored as bytes: Safari refuses Blobs in IndexedDB in private windows.
+ */
+export const saveCurrent = async (project: Project) => {
+	const image = { type: project.image.type, bytes: await project.image.arrayBuffer() };
+	await request("readwrite", (s) => s.put({ ...project, image } satisfies Stored, CURRENT)).catch(() => {});
+};
+
+export const loadCurrent = async (): Promise<Project | undefined> => {
+	const stored = await request<Stored | undefined>("readonly", (s) => s.get(CURRENT)).catch(() => undefined);
+	if (!stored) return undefined;
+	const { image } = stored;
+	return { ...stored, image: image instanceof Blob ? image : new Blob([image.bytes], { type: image.type }) };
+};
 
 const FORMAT = "pixelimage";
 export const EXTENSION = ".pixelimage.json";
