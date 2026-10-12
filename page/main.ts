@@ -125,16 +125,33 @@ const usePalette = (picked: string) => {
 	tools.setColors(paletteOf(slug).colors);
 };
 
-/** Shows an image, with the crop and edits it was saved with, or fresh ones. */
-const show = async (blob: Blob, name: string, saved?: Pick<Project, "crop" | "edits">) => {
+const applySettings = (p: Project) => {
+	square.checked = p.square;
+	crops.setSquare(p.square);
+	size.value = p.size;
+	custom.value = String(p.custom);
+	stretch.checked = p.stretch;
+	dither.value = p.dither;
+	rememberPalette(p.slug, p.palette);
+	usePalette(p.slug);
+};
+
+let loads = 0;
+
+/** Shows an image, with the settings, crop and edits of a saved project, or fresh ones. */
+const show = async (blob: Blob, name: string, saved?: Project) => {
 	status.textContent = "";
+	const ticket = ++loads;
 	let img: Img;
 	try {
 		img = await decode(blob);
 	} catch (err) {
-		status.textContent = (err as Error).message;
+		if (ticket === loads) status.textContent = (err as Error).message;
 		return;
 	}
+	// A big image can still be decoding when another one is opened; the newer one wins.
+	if (ticket !== loads) return;
+	if (saved) applySettings(saved);
 	if (source) URL.revokeObjectURL(source.url);
 	source = { img, blob, name, url: URL.createObjectURL(blob) };
 	store = saved ? unpackEdits(saved.edits) : new Map();
@@ -145,22 +162,11 @@ const show = async (blob: Blob, name: string, saved?: Pick<Project, "crop" | "ed
 	update();
 };
 
-const restore = (p: Project) => {
-	square.checked = p.square;
-	crops.setSquare(p.square);
-	size.value = p.size;
-	custom.value = String(p.custom);
-	stretch.checked = p.stretch;
-	dither.value = p.dither;
-	rememberPalette(p.slug, p.palette);
-	usePalette(p.slug);
-	return show(p.image, p.name, p);
-};
-
 listenForFiles([$<HTMLInputElement>("file"), $<HTMLInputElement>("replace")], async (file) => {
 	if (!isProject(file)) return show(file, file.name.replace(/\.[^.]+$/, "") || "image");
 	try {
-		await restore(await fromFile(await file.text()));
+		const saved = await fromFile(await file.text());
+		await show(saved.image, saved.name, saved);
 	} catch (err) {
 		status.textContent = (err as Error).message;
 	}
@@ -196,5 +202,5 @@ $<HTMLButtonElement>("save-gpl").addEventListener("click", () => {
 });
 
 loadCurrent().then((saved) => {
-	if (saved && !source) restore(saved);
+	if (saved && !source) show(saved.image, saved.name, saved);
 });
