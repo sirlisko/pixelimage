@@ -109,3 +109,5 @@ body.dragging .drop, body.dragging .stage { border-color: var(--accent); }
 	padding: 6px 8px;
 }
 .file.button:hover { border-color: var(--accent); }
+input[type="text"] { min-width: 260px; }
+select { max-width: 280px; }

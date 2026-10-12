@@ -4,7 +4,8 @@ import { fullRect, type Img, paint, type Rect } from "../src/image.ts";
 import { centredSquare, renderer } from "../src/render.ts";
 import { cropper } from "./crop.ts";
 import { decode, listenForImages } from "./load.ts";
-import { PALETTES, paletteOf } from "./palettes.ts";
+import { renderOptions, wirePicker } from "./palette-picker.ts";
+import { paletteOf } from "./palettes.ts";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -19,8 +20,8 @@ const dither = $<HTMLSelectElement>("dither");
 const preview = $<HTMLCanvasElement>("preview");
 const square = $<HTMLInputElement>("square");
 
-for (const [slug, { name }] of Object.entries(PALETTES)) palette.add(new Option(name, slug));
-palette.value = "endesga-32";
+let slug = "endesga-32";
+renderOptions(palette, slug);
 
 const render = renderer();
 let source: Img | undefined;
@@ -44,7 +45,7 @@ const crops = cropper($<HTMLDivElement>("source"), (next) => {
 const update = () => {
 	$<HTMLLabelElement>("custom-field").hidden = size.value !== "custom";
 	if (!source) return;
-	const colors = paletteOf(palette.value).colors;
+	const { colors } = paletteOf(slug);
 	const sprite = render(source, {
 		crop,
 		size: chosenSize(),
@@ -78,7 +79,13 @@ const open = async (file: File) => {
 };
 
 listenForImages([$<HTMLInputElement>("file"), $<HTMLInputElement>("replace")], open);
-$<HTMLFormElement>("controls").addEventListener("input", schedule);
+$<HTMLFormElement>("controls").addEventListener("input", (e) => {
+	if (e.target !== palette) schedule();
+});
+wirePicker(palette, $("lospec"), $<HTMLInputElement>("lospec-slug"), (picked) => {
+	slug = picked;
+	schedule();
+});
 square.addEventListener("change", () => {
 	crops.setSquare(square.checked);
 	if (square.checked) crops.set(squareCrop(crop));
