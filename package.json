@@ -1,0 +1,25 @@
+{
+  "name": "pixelimage",
+  "private": true,
+  "description": "Turn any image into palette-limited pixel art, touch it up and export it",
+  "type": "module",
+  "license": "MIT",
+  "author": "Luca Lischetti <luca@sirlisko.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sirlisko/pixelimage.git"
+  },
+  "homepage": "https://pixelimage.sirlisko.com",
+  "packageManager": "pnpm@12.10.1",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.3"
+  }
+}
