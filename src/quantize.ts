@@ -1,0 +1,96 @@
+import { fromHex, LINEAR, type Lab, oklab, oklabLinear, isRamp } from "./color.ts";
+import { CLEAR, type Img, OPAQUE, type Sprite } from "./image.ts";
+
+/** OKLab per pixel (three floats each), with transparent pixels marked so they're left out. */
+export interface Prepared {
+	width: number;
+	height: number;
+	lab: Float32Array;
+	opaque: Uint8Array;
+}
+
+// Percentiles rather than the extremes, so a few specular highlights or black pixels don't set the range.
+const LOW = 0.01;
+const HIGH = 0.99;
+
+export const prepare = (img: Img, { stretch }: { stretch: boolean }): Prepared => {
+	const count = img.width * img.height;
+	const lab = new Float32Array(count * 3);
+	const opaque = new Uint8Array(count);
+	const { data } = img;
+	for (let i = 0; i < count; i++) {
+		if (data[i * 4 + 3] < OPAQUE) continue;
+		opaque[i] = 1;
+		lab.set(oklabLinear(LINEAR[data[i * 4]], LINEAR[data[i * 4 + 1]], LINEAR[data[i * 4 + 2]]), i * 3);
+	}
+	if (stretch) stretchLightness(lab, opaque);
+	return { width: img.width, height: img.height, lab, opaque };
+};
+
+/** Maps the image's own lightness range onto 0–1. Without it, dark images land on one or two shades. */
+const stretchLightness = (lab: Float32Array, opaque: Uint8Array) => {
+	const kept: number[] = [];
+	opaque.forEach((o, i) => o && kept.push(lab[i * 3]));
+	if (!kept.length) return;
+	const levels = Float32Array.from(kept).sort();
+	const lo = levels[Math.round(LOW * (levels.length - 1))];
+	const hi = levels[Math.round(HIGH * (levels.length - 1))];
+	if (hi - lo < 1e-3) return;
+	for (let i = 0; i < opaque.length; i++) {
+		if (opaque[i]) lab[i * 3] = Math.min(1, Math.max(0, (lab[i * 3] - lo) / (hi - lo)));
+	}
+};
+
+export interface Matcher {
+	ramp: boolean;
+	/** Palette colours in OKLab. For a ramp only lightness is used. */
+	labs: Lab[];
+	/** Moves a pixel into the palette's space: for a ramp, 0–1 lightness onto its darkest-to-lightest range. */
+	target: (l: number, a: number, b: number) => Lab;
+	nearest: (l: number, a: number, b: number) => number;
+}
+
+export const matcher = (colors: string[]): Matcher => {
+	const labs = colors.map((c) => oklab(fromHex(c)));
+	if (isRamp(colors)) {
+		const levels = labs.map(([l]) => l);
+		const min = Math.min(...levels);
+		const max = Math.max(...levels);
+		return {
+			ramp: true,
+			labs,
+			target: (l) => [min + l * (max - min), 0, 0],
+			nearest: (l) => {
+				let best = 0;
+				for (let i = 1; i < levels.length; i++) if (Math.abs(levels[i] - l) < Math.abs(levels[best] - l)) best = i;
+				return best;
+			},
+		};
+	}
+	return {
+		ramp: false,
+		labs,
+		target: (l, a, b) => [l, a, b],
+		nearest: (l, a, b) => {
+			let best = 0;
+			let bestDist = Number.POSITIVE_INFINITY;
+			labs.forEach(([pl, pa, pb], i) => {
+				const dist = (l - pl) ** 2 + (a - pa) ** 2 + (b - pb) ** 2;
+				if (dist < bestDist) {
+					bestDist = dist;
+					best = i;
+				}
+			});
+			return best;
+		},
+	};
+};
+
+export const quantize = ({ width, height, lab, opaque }: Prepared, colors: string[]): Sprite => {
+	const match = matcher(colors);
+	const pixels = new Int16Array(width * height).fill(CLEAR);
+	for (let i = 0; i < pixels.length; i++) {
+		if (opaque[i]) pixels[i] = match.nearest(...match.target(lab[i * 3], lab[i * 3 + 1], lab[i * 3 + 2]));
+	}
+	return { width, height, pixels };
+};
