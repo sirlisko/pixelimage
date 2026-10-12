@@ -134,7 +134,9 @@ const update = () => {
 		cap: Number(cap.value) || 0,
 		background: background(),
 	});
-	const edited = applyEdits(base, currentEdits());
+	const edits = currentEdits();
+	$<HTMLParagraphElement>("edits-elsewhere").hidden = edits.size > 0 || ![...store.values()].some((e) => e.size);
+	const edited = applyEdits(base, edits);
 	const ring = outlineIndex(colors);
 	sprite = ring === undefined ? edited : addOutline(edited, ring);
 	tools.showUsed(new Set(sprite.pixels));

@@ -124,3 +124,4 @@ select { max-width: 280px; }
 .hint { color: var(--muted); font-size: 12px; margin: 0; text-align: center; }
 .swatch.unused { opacity: 0.3; }
 .swatch.unused:hover, .swatch.unused[aria-pressed="true"] { opacity: 1; }
+.hint.notice { color: var(--accent); }
