@@ -17,6 +17,8 @@ export interface Settings {
 	colors: string[];
 	stretch: boolean;
 	dither: Dither;
+	/** At most this many palette colours, or 0 for no limit. */
+	cap: number;
 	background: Background;
 }
 
@@ -69,6 +71,6 @@ export const renderer = () => {
 			rect = fullRect(input);
 		}
 		const scaled = small(input, [rect, width, height], () => downscale(input, rect, width, height));
-		return quantize(prepare(scaled, settings), settings.colors, settings.dither);
+		return quantize(prepare(scaled, settings), settings.colors, settings);
 	};
 };

@@ -21,6 +21,7 @@ describe("project file", () => {
 		palette: { name: "Sweetie 16", colors: ["#1a1c2c", "#5d275d"] },
 		stretch: true,
 		dither: "bayer",
+		cap: 6,
 		background: { seeds: [{ x: 3, y: 4 }], tolerance: 0.12 },
 		edits: [["1,2,30,30~32x32~sweetie-16", [[5, 1]]]],
 	};

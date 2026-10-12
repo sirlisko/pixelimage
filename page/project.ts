@@ -18,6 +18,8 @@ export interface Project {
 	palette: Palette;
 	stretch: boolean;
 	dither: Dither;
+	/** At most this many palette colours, or 0 for no limit. */
+	cap: number;
 	background: Background;
 	edits: [string, [number, number][]][];
 }
@@ -113,6 +115,7 @@ export const fromFile = async (text: string): Promise<Project> => {
 		palette: { name: String(palette.name || data.slug), colors: palette.colors },
 		stretch: Boolean(data.stretch),
 		dither: (["none", "floyd", "bayer"].includes(data.dither as string) ? data.dither : "none") as Dither,
+		cap: Math.max(0, Math.floor(Number(data.cap) || 0)),
 		background: readBackground(data.background),
 		edits: data.edits as Project["edits"],
 	};

@@ -1,4 +1,5 @@
 import { fromHex, LINEAR, type Lab, oklab, oklabLinear, isRamp } from "./color.ts";
+import { keepColors, usage } from "./cap.ts";
 import { bayer, type Dither, floyd, plainPixels } from "./dither.ts";
 import { CLEAR, type Img, OPAQUE, type Sprite } from "./image.ts";
 
@@ -53,9 +54,10 @@ export interface Matcher {
 	nearest: (l: number, a: number, b: number) => number;
 }
 
-export const matcher = (colors: string[]): Matcher => {
+/** `ramp` can be forced, so a capped palette is matched the same way as the palette it came from. */
+export const matcher = (colors: string[], ramp = isRamp(colors)): Matcher => {
 	const labs = colors.map((c) => oklab(fromHex(c)));
-	if (isRamp(colors)) {
+	if (ramp) {
 		const levels = labs.map(([l]) => l);
 		const min = Math.min(...levels);
 		const max = Math.max(...levels);
@@ -95,9 +97,32 @@ export const matcher = (colors: string[]): Matcher => {
 // Full-strength error diffusion speckles full-colour palettes, where a close colour is almost always available.
 const COLOUR_DAMP = 0.6;
 
-export const quantize = (prepared: Prepared, colors: string[], dither: Dither = "none"): Sprite => {
+export interface Options {
+	dither?: Dither;
+	/** At most this many palette colours in the image. */
+	cap?: number;
+}
+
+export const quantize = (prepared: Prepared, colors: string[], { dither = "none", cap }: Options = {}): Sprite => {
+	if (cap && cap < colors.length) return capped(prepared, colors, dither, cap);
+	return quantizeWith(prepared, colors, dither, isRamp(colors));
+};
+
+/** Picks the colours to keep from a plain conversion, then converts again with only those, dithering included. */
+const capped = (prepared: Prepared, colors: string[], dither: Dither, cap: number): Sprite => {
+	const ramp = isRamp(colors);
+	const plain = quantizeWith(prepared, colors, "none", ramp);
+	const kept = keepColors(usage(plain, colors.length), matcher(colors, ramp).labs, cap, ramp);
+	const sprite = quantizeWith(prepared, kept.map((i) => colors[i]), dither, ramp);
+	sprite.pixels.forEach((p, i) => {
+		if (p !== CLEAR) sprite.pixels[i] = kept[p];
+	});
+	return sprite;
+};
+
+const quantizeWith = (prepared: Prepared, colors: string[], dither: Dither, ramp: boolean): Sprite => {
 	const { width, height, lab, opaque } = prepared;
-	const match = matcher(colors);
+	const match = matcher(colors, ramp);
 	const target = new Float32Array(lab.length);
 	for (let i = 0; i < opaque.length; i++) {
 		if (opaque[i]) target.set(match.target(lab[i * 3], lab[i * 3 + 1], lab[i * 3 + 2]), i * 3);

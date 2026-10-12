@@ -23,7 +23,7 @@ describe("render", () => {
 			[K, W],
 			[W, K],
 		]);
-		const sprite = renderer()(source, { crop: centredSquare(source), size: 2, colors: GAMEBOY, stretch: true, dither: "none", background: NONE });
+		const sprite = renderer()(source, { crop: centredSquare(source), size: 2, colors: GAMEBOY, stretch: true, dither: "none", cap: 0, background: NONE });
 		expect([...sprite.pixels]).toEqual([0, 3, 3, 0]);
 	});
 
@@ -34,7 +34,7 @@ describe("render", () => {
 			[W, W, W],
 		]);
 		const background = { seeds: [{ x: 0, y: 0 }], tolerance: 0.1 };
-		const sprite = renderer()(source, { crop: centredSquare(source), size: 3, colors: GAMEBOY, stretch: true, dither: "none", background });
+		const sprite = renderer()(source, { crop: centredSquare(source), size: 3, colors: GAMEBOY, stretch: true, dither: "none", cap: 0, background });
 		expect([...sprite.pixels].map((p) => p !== CLEAR)).toEqual([false, false, false, false, true, false, false, false, false]);
 	});
 });

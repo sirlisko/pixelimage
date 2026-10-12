@@ -33,14 +33,14 @@ describe("dithering", () => {
 	for (const dither of ["floyd", "bayer"] as const) {
 		test(`${dither} breaks a gradient's bands into more transitions`, () => {
 			const prepared = prepare(gradient(32), { stretch: false });
-			const row = (d: typeof dither | "none") => [...quantize(prepared, GAMEBOY, d).pixels.slice(32, 64)];
+			const row = (d: typeof dither | "none") => [...quantize(prepared, GAMEBOY, { dither: d }).pixels.slice(32, 64)];
 			expect(changes(row(dither))).toBeGreaterThan(changes(row("none")));
 		});
 	}
 
 	test("leaves flat areas alone", () => {
 		const flat = image([Array.from({ length: 8 }, () => grey(150))]);
-		const pixels = [...quantize(prepare(flat, { stretch: false }), GAMEBOY, "floyd").pixels];
+		const pixels = [...quantize(prepare(flat, { stretch: false }), GAMEBOY, { dither: "floyd" }).pixels];
 		expect(new Set(pixels).size).toBe(1);
 	});
 });

@@ -33,6 +33,7 @@ const custom = $<HTMLInputElement>("custom");
 const palette = $<HTMLSelectElement>("palette");
 const stretch = $<HTMLInputElement>("stretch");
 const dither = $<HTMLSelectElement>("dither");
+const cap = $<HTMLInputElement>("cap");
 const preview = $<HTMLCanvasElement>("preview");
 const square = $<HTMLInputElement>("square");
 const tolerance = $<HTMLInputElement>("tolerance");
@@ -94,6 +95,7 @@ const project = (): Project | undefined =>
 		palette: paletteOf(slug),
 		stretch: stretch.checked,
 		dither: dither.value as Dither,
+		cap: Number(cap.value) || 0,
 		background: background(),
 		edits: packEdits(store),
 	};
@@ -120,6 +122,7 @@ const update = () => {
 		colors,
 		stretch: stretch.checked,
 		dither: dither.value as Dither,
+		cap: Number(cap.value) || 0,
 		background: background(),
 	});
 	sprite = applyEdits(base, currentEdits());
@@ -147,6 +150,7 @@ const applySettings = (p: Project) => {
 	custom.value = String(p.custom);
 	stretch.checked = p.stretch;
 	dither.value = p.dither;
+	cap.value = p.cap ? String(p.cap) : "";
 	tolerance.value = String(Math.round((p.background ?? NO_BACKGROUND).tolerance * 100));
 	rememberPalette(p.slug, p.palette);
 	usePalette(p.slug);
