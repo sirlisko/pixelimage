@@ -1,8 +1,10 @@
 import { squareCrop } from "../src/crop.ts";
 import type { Dither } from "../src/dither.ts";
-import { fullRect, type Img, paint, type Rect } from "../src/image.ts";
+import { toGpl } from "../src/gpl.ts";
+import { fullRect, type Img, paint, type Rect, type Sprite } from "../src/image.ts";
 import { centredSquare, renderer } from "../src/render.ts";
 import { cropper } from "./crop.ts";
+import { download, png } from "./export.ts";
 import { decode, listenForImages } from "./load.ts";
 import { renderOptions, wirePicker } from "./palette-picker.ts";
 import { paletteOf } from "./palettes.ts";
@@ -27,6 +29,8 @@ const render = renderer();
 let source: Img | undefined;
 let crop: Rect = { x: 0, y: 0, width: 1, height: 1 };
 let sourceUrl = "";
+let sourceName = "image";
+let sprite: Sprite | undefined;
 
 const chosenSize = () => (size.value === "custom" ? Math.min(256, Math.max(4, Number(custom.value) || 32)) : Number(size.value));
 
@@ -46,7 +50,7 @@ const update = () => {
 	$<HTMLLabelElement>("custom-field").hidden = size.value !== "custom";
 	if (!source) return;
 	const { colors } = paletteOf(slug);
-	const sprite = render(source, {
+	sprite = render(source, {
 		crop,
 		size: chosenSize(),
 		colors,
@@ -69,6 +73,7 @@ const open = async (file: File) => {
 		status.textContent = (err as Error).message;
 		return;
 	}
+	sourceName = file.name.replace(/\.[^.]+$/, "") || "image";
 	URL.revokeObjectURL(sourceUrl);
 	sourceUrl = URL.createObjectURL(file);
 	crop = initialCrop(source);
@@ -92,4 +97,15 @@ square.addEventListener("change", () => {
 });
 $<HTMLButtonElement>("reset-crop").addEventListener("click", () => {
 	if (source) crops.set(initialCrop(source));
+});
+
+$<HTMLButtonElement>("save-png").addEventListener("click", async () => {
+	if (!sprite) return;
+	const scale = Number($<HTMLSelectElement>("scale").value);
+	const suffix = scale === 1 ? "" : `@${scale}x`;
+	download(`${sourceName}-${sprite.width}${suffix}.png`, await png(sprite, paletteOf(slug).colors, scale), "image/png");
+});
+$<HTMLButtonElement>("save-gpl").addEventListener("click", () => {
+	const { name, colors } = paletteOf(slug);
+	download(`${slug}.gpl`, toGpl(name, colors), "text/plain");
 });

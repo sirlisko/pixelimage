@@ -59,6 +59,17 @@
 				<canvas id="preview" width="32" height="32"></canvas>
 			</div>
 		</div>
+		<fieldset class="export">
+			<label>Scale <select id="scale">
+				<option value="1" selected>1×</option>
+				<option value="2">2×</option>
+				<option value="4">4×</option>
+				<option value="8">8×</option>
+				<option value="16">16×</option>
+			</select></label>
+			<button id="save-png" type="button">Download PNG</button>
+			<button id="save-gpl" type="button">Download palette (.gpl)</button>
+		</fieldset>
 	</div>
 </main>
 <script type="module" src="./main.ts"></script>
