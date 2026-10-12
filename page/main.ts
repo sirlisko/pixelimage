@@ -101,13 +101,20 @@ const project = (): Project | undefined =>
 	};
 
 let saving = 0;
+const saveNow = () => {
+	clearTimeout(saving);
+	saving = 0;
+	const current = project();
+	if (current) saveCurrent(current);
+};
 const autosave = () => {
 	clearTimeout(saving);
-	saving = window.setTimeout(() => {
-		const current = project();
-		if (current) saveCurrent(current);
-	}, 500);
+	saving = window.setTimeout(saveNow, 500);
 };
+// Closing the tab right after a change would otherwise lose it to the delay.
+document.addEventListener("visibilitychange", () => {
+	if (document.visibilityState === "hidden" && saving) saveNow();
+});
 
 const background = (): Background => ({ seeds, tolerance: Number(tolerance.value) / 100 });
 
