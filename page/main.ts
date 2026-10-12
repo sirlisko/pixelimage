@@ -171,6 +171,8 @@ const update = () => {
 	clearBackground.disabled = !seeds.length;
 	// A palette from the image already fits it, and its size is the colour count.
 	stretch.disabled = isFromImage(slug);
+	// For a fixed palette the number caps how many of its colours are used; from the image, it's the palette's size.
+	$("cap-label").textContent = isFromImage(slug) ? "Colours" : "Max colours";
 	cap.placeholder = isFromImage(slug) ? String(IMAGE_COLOURS) : "all";
 	if (!source) return;
 	const rendered = render(source.img, {
