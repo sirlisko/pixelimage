@@ -7,10 +7,19 @@ import { centredSquare, outputSize, renderer } from "../src/render.ts";
 import { cropper } from "./crop.ts";
 import { editor } from "./editor.ts";
 import { download, png } from "./export.ts";
-import { decode, listenForImages } from "./load.ts";
+import { decode, isProject, listenForFiles } from "./load.ts";
 import { renderOptions, wirePicker } from "./palette-picker.ts";
 import { paletteOf, rememberPalette } from "./palettes.ts";
-import { loadCurrent, packEdits, type Project, saveCurrent, unpackEdits } from "./project.ts";
+import {
+	EXTENSION,
+	fromFile,
+	loadCurrent,
+	packEdits,
+	type Project,
+	saveCurrent,
+	toFile,
+	unpackEdits,
+} from "./project.ts";
 import { wireTools } from "./tools.ts";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -148,9 +157,14 @@ const restore = (p: Project) => {
 	return show(p.image, p.name, p);
 };
 
-listenForImages([$<HTMLInputElement>("file"), $<HTMLInputElement>("replace")], (file) =>
-	show(file, file.name.replace(/\.[^.]+$/, "") || "image"),
-);
+listenForFiles([$<HTMLInputElement>("file"), $<HTMLInputElement>("replace")], async (file) => {
+	if (!isProject(file)) return show(file, file.name.replace(/\.[^.]+$/, "") || "image");
+	try {
+		await restore(await fromFile(await file.text()));
+	} catch (err) {
+		status.textContent = (err as Error).message;
+	}
+});
 $<HTMLFormElement>("controls").addEventListener("input", (e) => {
 	if (e.target !== palette) schedule();
 });
@@ -171,6 +185,10 @@ $<HTMLButtonElement>("save-png").addEventListener("click", async () => {
 	const scale = Number($<HTMLSelectElement>("scale").value);
 	const suffix = scale === 1 ? "" : `@${scale}x`;
 	download(`${source.name}-${sprite.width}${suffix}.png`, await png(sprite, paletteOf(slug).colors, scale), "image/png");
+});
+$<HTMLButtonElement>("save-project").addEventListener("click", async () => {
+	const current = project();
+	if (current) download(`${current.name}${EXTENSION}`, await toFile(current), "application/json");
 });
 $<HTMLButtonElement>("save-gpl").addEventListener("click", () => {
 	const { name, colors } = paletteOf(slug);

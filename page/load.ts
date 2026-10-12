@@ -11,20 +11,23 @@ export const decode = async (blob: Blob): Promise<Img> => {
 	return ctx.getImageData(0, 0, canvas.width, canvas.height);
 };
 
-const imageIn = (files: FileList | null | undefined) => [...(files ?? [])].find((f) => f.type.startsWith("image/"));
+export const isProject = (file: File) => file.name.endsWith(".json");
 
-/** Calls `onFile` for an image picked with one of `inputs`, pasted anywhere, or dropped anywhere on the page. */
-export const listenForImages = (inputs: HTMLInputElement[], onFile: (file: File) => void) => {
+const usable = (files: FileList | null | undefined) =>
+	[...(files ?? [])].find((f) => f.type.startsWith("image/") || isProject(f));
+
+/** Calls `onFile` for an image or project picked with one of `inputs`, pasted anywhere, or dropped anywhere. */
+export const listenForFiles = (inputs: HTMLInputElement[], onFile: (file: File) => void) => {
 	for (const input of inputs) {
 		input.addEventListener("change", () => {
-			const file = imageIn(input.files);
+			const file = usable(input.files);
 			if (file) onFile(file);
 			input.value = "";
 		});
 	}
 	window.addEventListener("paste", (e) => {
 		if (e.target instanceof HTMLInputElement && e.target.type !== "file") return;
-		const file = imageIn(e.clipboardData?.files);
+		const file = usable(e.clipboardData?.files);
 		if (file) {
 			e.preventDefault();
 			onFile(file);
@@ -40,7 +43,7 @@ export const listenForImages = (inputs: HTMLInputElement[], onFile: (file: File)
 	window.addEventListener("drop", (e) => {
 		e.preventDefault();
 		document.body.classList.remove("dragging");
-		const file = imageIn(e.dataTransfer?.files);
+		const file = usable(e.dataTransfer?.files);
 		if (file) onFile(file);
 	});
 };

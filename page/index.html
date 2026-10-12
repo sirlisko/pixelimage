@@ -20,7 +20,7 @@
 <main>
 	<p id="status" role="status"></p>
 	<section id="empty" class="drop">
-		<p>Drop an image here, paste one, or <label class="file">choose a file<input id="file" type="file" accept="image/*"></label>.</p>
+		<p>Drop an image here, paste one, or <label class="file">choose a file<input id="file" type="file" accept="image/*,.json"></label>.<br>A saved project opens the same way.</p>
 	</section>
 	<div id="workspace" hidden>
 		<form id="controls" autocomplete="off" onsubmit="return false">
@@ -45,7 +45,8 @@
 			<fieldset>
 				<label class="inline"><input id="square" type="checkbox" checked> Square crop</label>
 				<button id="reset-crop" type="button">Reset crop</button>
-				<label class="file button">Replace image<input id="replace" type="file" accept="image/*"></label>
+				<label class="file button">Open image or project<input id="replace" type="file" accept="image/*,.json"></label>
+				<button id="save-project" type="button">Save project</button>
 			</fieldset>
 		</form>
 		<div class="panes">

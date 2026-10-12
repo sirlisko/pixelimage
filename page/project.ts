@@ -51,3 +51,58 @@ export const saveCurrent = (project: Project) => request("readwrite", (s) => s.p
 
 export const loadCurrent = () =>
 	request<Project | undefined>("readonly", (s) => s.get(CURRENT)).catch(() => undefined);
+
+const FORMAT = "pixelimage";
+export const EXTENSION = ".pixelimage.json";
+
+const toDataUrl = async (blob: Blob) => {
+	const bytes = new Uint8Array(await blob.arrayBuffer());
+	let binary = "";
+	// In chunks, since spreading a whole photo into one call overflows the stack.
+	for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+	return `data:${blob.type || "application/octet-stream"};base64,${btoa(binary)}`;
+};
+
+/** The project as one JSON file, image included, to keep or move to another browser. */
+export const toFile = async (project: Project) =>
+	JSON.stringify({ format: FORMAT, version: 1, ...project, image: await toDataUrl(project.image) });
+
+const isRect = (r: unknown): r is Rect =>
+	typeof r === "object" && r !== null && ["x", "y", "width", "height"].every((k) => Number.isFinite((r as never)[k]));
+
+/** Reads a project file, refusing anything that isn't one rather than half-loading it. */
+export const fromFile = async (text: string): Promise<Project> => {
+	const bad = new Error("That file isn't a pixelimage project.");
+	let data: Record<string, unknown>;
+	try {
+		data = JSON.parse(text);
+	} catch {
+		throw bad;
+	}
+	const palette = data.palette as Palette | undefined;
+	const valid =
+		data.format === FORMAT &&
+		typeof data.image === "string" &&
+		data.image.startsWith("data:image/") &&
+		isRect(data.crop) &&
+		typeof data.slug === "string" &&
+		Array.isArray(palette?.colors) &&
+		palette.colors.length > 0 &&
+		palette.colors.every((c) => typeof c === "string" && /^#[0-9a-f]{6}$/.test(c)) &&
+		Array.isArray(data.edits);
+	if (!valid) throw bad;
+	const image = await (await fetch(data.image as string)).blob();
+	return {
+		name: String(data.name || "image"),
+		image,
+		crop: data.crop as Rect,
+		square: Boolean(data.square),
+		size: String(data.size),
+		custom: Number(data.custom) || 32,
+		slug: data.slug as string,
+		palette: { name: String(palette.name || data.slug), colors: palette.colors },
+		stretch: Boolean(data.stretch),
+		dither: (["none", "floyd", "bayer"].includes(data.dither as string) ? data.dither : "none") as Dither,
+		edits: data.edits as Project["edits"],
+	};
+};
