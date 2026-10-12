@@ -8,6 +8,7 @@ import { type Background, centredSquare, outputSize, type PaletteSource, rendere
 import { downscale, fitWithin } from "../src/resize.ts";
 import { wireCompare } from "./compare.ts";
 import { cropper } from "./crop.ts";
+import { wireGrid } from "./grid.ts";
 import { editor } from "./editor.ts";
 import { download, png } from "./export.ts";
 import { decode, isProject, listenForFiles } from "./load.ts";
@@ -86,6 +87,8 @@ const edit = editor(preview, {
 	},
 });
 const tools = wireTools(preview.closest(".editor") as HTMLElement, edit);
+
+const sizeGrid = wireGrid($<HTMLButtonElement>("grid-button"), $("grid"));
 
 // The overlay is drawn at about the size it's shown, rather than the photo's full size.
 const COMPARE_SIZE = 512;
@@ -172,6 +175,7 @@ const update = () => {
 	tools.showUsed(new Set(sprite.pixels));
 	preview.width = sprite.width;
 	preview.height = sprite.height;
+	sizeGrid(sprite.width, sprite.height);
 	const img = paint(sprite, colors);
 	(preview.getContext("2d") as CanvasRenderingContext2D).putImageData(new ImageData(img.data, img.width), 0, 0);
 	autosave();
