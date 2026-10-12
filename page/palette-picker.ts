@@ -1,13 +1,19 @@
-import { loadedPalettes, loadPalette, PALETTES, type Palette, paletteOf, slugOf } from "./palettes.ts";
+import { GROUPS, loadedPalettes, loadPalette, PALETTES, type Palette, paletteOf, slugOf } from "./palettes.ts";
 
 // Not a valid slug, so it can't clash with a real palette.
 const OTHER = "*lospec";
 
 export const renderOptions = (select: HTMLSelectElement, current: string) => {
 	const option = ([slug, { name, colors }]: [string, Palette]) => new Option(`${name} (${colors.length})`, slug);
+	const group = (label: string, entries: [string, Palette][]) => {
+		const g = Object.assign(document.createElement("optgroup"), { label });
+		g.append(...entries.map(option));
+		return g;
+	};
+	const loaded = loadedPalettes();
 	select.replaceChildren(
-		...Object.entries(PALETTES).map(option),
-		...loadedPalettes().map(option),
+		...GROUPS.map(([label, slugs]) => group(label, slugs.map((slug) => [slug, PALETTES[slug]]))),
+		...(loaded.length ? [group("From Lospec", loaded)] : []),
 		new Option("Other Lospec palette…", OTHER),
 	);
 	select.value = paletteOf(current) ? current : Object.keys(PALETTES)[0];

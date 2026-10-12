@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { loadPalette, paletteOf, slugOf } from "../page/palettes.ts";
+import { GROUPS, loadPalette, PALETTES, paletteOf, slugOf } from "../page/palettes.ts";
 
 const lospec = (body: unknown, status = 200) =>
 	vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify(body), { status }));
@@ -41,4 +41,14 @@ describe("loadPalette", () => {
 		await expect(loadPalette("a~b")).rejects.toThrow();
 		expect(fetch).not.toHaveBeenCalled();
 	});
+});
+
+test("every built-in palette is grouped once and has valid colours", () => {
+	const grouped = GROUPS.flatMap(([, slugs]) => slugs);
+	expect(new Set(grouped).size).toBe(grouped.length);
+	expect(grouped.sort()).toEqual(Object.keys(PALETTES).sort());
+	for (const { colors } of Object.values(PALETTES)) {
+		expect(colors.every((c) => /^#[0-9a-f]{6}$/.test(c))).toBe(true);
+	}
+	expect(PALETTES["master-system"].colors).toHaveLength(64);
 });
