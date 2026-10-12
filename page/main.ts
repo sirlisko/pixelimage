@@ -5,7 +5,8 @@ import { toGpl } from "../src/gpl.ts";
 import { darkest, outline as addOutline } from "../src/outline.ts";
 import { fullRect, type Img, paint, type Rect, type Sprite } from "../src/image.ts";
 import { type Background, centredSquare, outputSize, type PaletteSource, renderer } from "../src/render.ts";
-import { fitWithin } from "../src/resize.ts";
+import { downscale, fitWithin } from "../src/resize.ts";
+import { wireCompare } from "./compare.ts";
 import { cropper } from "./crop.ts";
 import { editor } from "./editor.ts";
 import { download, png } from "./export.ts";
@@ -84,7 +85,15 @@ const edit = editor(preview, {
 		schedule();
 	},
 });
-const tools = wireTools(preview.parentElement as HTMLElement, edit);
+const tools = wireTools(preview.closest(".editor") as HTMLElement, edit);
+
+// The overlay is drawn at about the size it's shown, rather than the photo's full size.
+const COMPARE_SIZE = 512;
+wireCompare($<HTMLButtonElement>("compare-button"), $<HTMLCanvasElement>("compare"), () => {
+	if (!source) return undefined;
+	const scale = Math.min(1, COMPARE_SIZE / Math.max(crop.width, crop.height));
+	return downscale(source.img, crop, Math.max(1, Math.round(crop.width * scale)), Math.max(1, Math.round(crop.height * scale)));
+});
 
 const project = (): Project | undefined =>
 	source && {

@@ -92,7 +92,10 @@
 				</div>
 			</div>
 			<div class="stage editor">
-				<canvas id="preview" width="32" height="32" data-tool="pencil"></canvas>
+				<div class="canvas">
+					<canvas id="preview" width="32" height="32" data-tool="pencil"></canvas>
+					<canvas id="compare" class="overlay" hidden></canvas>
+				</div>
 				<div class="tools" role="toolbar" aria-label="Edit pixels">
 					<button type="button" data-tool="pencil" aria-pressed="true" title="Pencil (B)">Pencil</button>
 					<button type="button" data-tool="eraser" aria-pressed="false" title="Eraser (E)">Eraser</button>
@@ -102,6 +105,8 @@
 					<span class="sep"></span>
 					<button id="undo" type="button" title="Undo (⌘/Ctrl+Z)">Undo</button>
 					<button id="clear-edits" type="button">Clear edits</button>
+					<span class="sep"></span>
+					<button id="compare-button" type="button" title="Hold to see the photo (hold C)">Compare</button>
 				</div>
 				<div id="swatches" class="swatches"></div>
 				<p id="edits-elsewhere" class="hint notice" hidden>Your edits belong to another crop, size or palette. Switch back to see them.</p>
