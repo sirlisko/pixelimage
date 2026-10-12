@@ -67,11 +67,11 @@
 				<label>Palette <select id="palette"></select></label>
 				<label id="lospec" hidden><span>Lospec palette · <a href="https://lospec.com/palette-list" target="_blank" rel="noopener">Browse palettes ↗</a></span> <input id="lospec-slug" type="text" spellcheck="false" placeholder="name or link, e.g. sweetie-16"></label>
 				<label>Colours <input id="cap" type="number" min="1" max="256" aria-describedby="cap-hint"> <span id="cap-hint" class="hint"></span></label>
-				<label>Dither <select id="dither">
+				<label>Dither <select id="dither" aria-describedby="dither-hint">
 					<option value="none">Off</option>
 					<option value="floyd">Floyd–Steinberg</option>
 					<option value="bayer">Bayer</option>
-				</select></label>
+				</select> <span id="dither-hint" class="hint">Best with small palettes</span></label>
 				<label class="inline"><input id="stretch" type="checkbox" checked> Stretch contrast</label>
 			</fieldset>
 			<fieldset>
