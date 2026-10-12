@@ -1,5 +1,6 @@
 import { backgroundMask, clearMasked, type Point } from "./background.ts";
 import type { Dither } from "./dither.ts";
+import { extractPalette } from "./extract.ts";
 import { fullRect, type Img, type Rect, type Sprite } from "./image.ts";
 import { prepare, quantize } from "./quantize.ts";
 import { downscale } from "./resize.ts";
@@ -10,17 +11,24 @@ export interface Background {
 	tolerance: number;
 }
 
+/** A fixed palette, or one taken from the image: `count` colours, optionally snapped to `bits` per channel. */
+export type PaletteSource = { colors: string[] } | { fromImage: { count: number; bits?: number } };
+
 export interface Settings {
 	crop: Rect;
 	/** Output width in pixels. The height follows the crop's aspect ratio. */
 	size: number;
-	colors: string[];
+	palette: PaletteSource;
 	stretch: boolean;
 	dither: Dither;
 	/** At most this many palette colours, or 0 for no limit. */
 	cap: number;
 	background: Background;
 }
+
+// Palettes are taken from a copy of the crop this big, so they don't change with the output size and edits keep
+// their colours.
+const SAMPLE = 128;
 
 // Background removal runs on a copy of the crop this big: detailed enough for clean edges, small enough to stay quick.
 const WORK = 512;
@@ -51,7 +59,9 @@ export const renderer = () => {
 	const work = last<Img>();
 	const masked = last<Img>();
 	const small = last<Img>();
-	return (source: Img, settings: Settings): Sprite => {
+	const sample = last<Img>();
+	const extracted = last<string[]>();
+	return (source: Img, settings: Settings): { sprite: Sprite; colors: string[] } => {
 		const { crop, background } = settings;
 		const { width, height } = outputSize(settings);
 		let input = source;
@@ -71,6 +81,19 @@ export const renderer = () => {
 			rect = fullRect(input);
 		}
 		const scaled = small(input, [rect, width, height], () => downscale(input, rect, width, height));
-		return quantize(prepare(scaled, settings), settings.colors, settings);
+		const { palette } = settings;
+		if ("colors" in palette) {
+			return { sprite: quantize(prepare(scaled, settings), palette.colors, settings), colors: palette.colors };
+		}
+		const scale = Math.min(1, SAMPLE / Math.max(rect.width, rect.height));
+		const sampled = sample(input, rect, () =>
+			downscale(input, rect, Math.max(1, Math.round(rect.width * scale)), Math.max(1, Math.round(rect.height * scale))),
+		);
+		const { count, bits } = palette.fromImage;
+		const colors = extracted(sampled, [count, bits], () => extractPalette(sampled, count, bits));
+		// The palette is the image's own colours, already where they belong: stretching or spreading lightness over it
+		// as a ramp (an image of blues looks like one) would only move pixels off them.
+		const sprite = quantize(prepare(scaled, { stretch: false }), colors, { dither: settings.dither, ramp: false });
+		return { sprite, colors };
 	};
 };

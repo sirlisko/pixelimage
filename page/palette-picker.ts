@@ -1,22 +1,36 @@
-import { GROUPS, loadedPalettes, loadPalette, PALETTES, type Palette, paletteOf, slugOf } from "./palettes.ts";
+import {
+	FROM_IMAGE,
+	GROUPS,
+	isFromImage,
+	loadedPalettes,
+	loadPalette,
+	PALETTES,
+	type Palette,
+	paletteOf,
+	slugOf,
+} from "./palettes.ts";
 
 // Not a valid slug, so it can't clash with a real palette.
 const OTHER = "*lospec";
 
 export const renderOptions = (select: HTMLSelectElement, current: string) => {
 	const option = ([slug, { name, colors }]: [string, Palette]) => new Option(`${name} (${colors.length})`, slug);
-	const group = (label: string, entries: [string, Palette][]) => {
+	const group = (label: string, options: HTMLOptionElement[]) => {
 		const g = Object.assign(document.createElement("optgroup"), { label });
-		g.append(...entries.map(option));
+		g.append(...options);
 		return g;
 	};
 	const loaded = loadedPalettes();
 	select.replaceChildren(
-		...GROUPS.map(([label, slugs]) => group(label, slugs.map((slug) => [slug, PALETTES[slug]]))),
-		...(loaded.length ? [group("From Lospec", loaded)] : []),
+		...GROUPS.map(([label, slugs]) => group(label, slugs.map((slug) => option([slug, PALETTES[slug]])))),
+		...(loaded.length ? [group("From Lospec", loaded.map(option))] : []),
+		group(
+			"From the image",
+			Object.entries(FROM_IMAGE).map(([slug, { name }]) => new Option(name, slug)),
+		),
 		new Option("Other Lospec palette…", OTHER),
 	);
-	select.value = paletteOf(current) ? current : Object.keys(PALETTES)[0];
+	select.value = paletteOf(current) || isFromImage(current) ? current : Object.keys(PALETTES)[0];
 };
 
 /** Wires the select and its Lospec name field; `pick` gets a slug once its palette is ready. */

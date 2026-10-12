@@ -4,14 +4,14 @@ import { applyEdits, type Edits, editKey } from "../src/edits.ts";
 import { toGpl } from "../src/gpl.ts";
 import { darkest, outline as addOutline } from "../src/outline.ts";
 import { fullRect, type Img, paint, type Rect, type Sprite } from "../src/image.ts";
-import { type Background, centredSquare, outputSize, renderer } from "../src/render.ts";
+import { type Background, centredSquare, outputSize, type PaletteSource, renderer } from "../src/render.ts";
 import { fitWithin } from "../src/resize.ts";
 import { cropper } from "./crop.ts";
 import { editor } from "./editor.ts";
 import { download, png } from "./export.ts";
 import { decode, isProject, listenForFiles } from "./load.ts";
 import { renderOptions, wirePicker } from "./palette-picker.ts";
-import { paletteOf, rememberPalette } from "./palettes.ts";
+import { FROM_IMAGE, IMAGE_COLOURS, isFromImage, paletteOf, rememberPalette } from "./palettes.ts";
 import {
 	EXTENSION,
 	fromFile,
@@ -43,6 +43,8 @@ const tolerance = $<HTMLInputElement>("tolerance");
 const clearBackground = $<HTMLButtonElement>("clear-background");
 
 let slug = "endesga-32";
+/** The colours of the last render, which for a palette from the image depend on the image. */
+let colors: string[] = paletteOf(slug).colors;
 
 const render = renderer();
 let source: { img: Img; blob: Blob; name: string; url: string } | undefined;
@@ -67,7 +69,7 @@ const crops = cropper($<HTMLDivElement>("source"), (next) => {
 
 const currentEdits = () => {
 	const { width, height } = outputSize({ crop, size: chosenSize() });
-	const key = editKey(crop, width, height, slug);
+	const key = editKey(crop, width, height, isFromImage(slug) ? `${slug}:${imageColours()}` : slug);
 	if (!store.has(key)) store.set(key, new Map());
 	return store.get(key) as Edits;
 };
@@ -93,7 +95,7 @@ const project = (): Project | undefined =>
 		size: size.value,
 		custom: Number(custom.value),
 		slug,
-		palette: paletteOf(slug),
+		palette: { name: paletteName(), colors },
 		stretch: stretch.checked,
 		dither: dither.value as Dither,
 		cap: Number(cap.value) || 0,
@@ -120,20 +122,39 @@ document.addEventListener("visibilitychange", () => {
 
 const background = (): Background => ({ seeds, tolerance: Number(tolerance.value) / 100 });
 
+const imageColours = () => Number(cap.value) || IMAGE_COLOURS;
+
+const paletteName = () => FROM_IMAGE[slug]?.name ?? paletteOf(slug).name;
+
+const paletteSource = (): PaletteSource =>
+	isFromImage(slug) ? { fromImage: { count: imageColours(), bits: FROM_IMAGE[slug].bits } } : { colors: paletteOf(slug).colors };
+
+/** Swatches and the outline menu follow the colours, which a palette from the image changes as you go. */
+const useColors = (next: string[]) => {
+	if (next.join() === colors.join()) return;
+	colors = next;
+	tools.setColors(colors);
+	outlineOptions(colors);
+};
+
 const update = () => {
 	$<HTMLLabelElement>("custom-field").hidden = size.value !== "custom";
 	clearBackground.disabled = !seeds.length;
+	// A palette from the image already fits it, and its size is the colour count.
+	stretch.disabled = isFromImage(slug);
+	cap.placeholder = isFromImage(slug) ? String(IMAGE_COLOURS) : "all";
 	if (!source) return;
-	const { colors } = paletteOf(slug);
-	const base = render(source.img, {
+	const rendered = render(source.img, {
 		crop,
 		size: chosenSize(),
-		colors,
+		palette: paletteSource(),
 		stretch: stretch.checked,
 		dither: dither.value as Dither,
 		cap: Number(cap.value) || 0,
 		background: background(),
 	});
+	useColors(rendered.colors);
+	const base = rendered.sprite;
 	const edits = currentEdits();
 	$<HTMLParagraphElement>("edits-elsewhere").hidden = edits.size > 0 || ![...store.values()].some((e) => e.size);
 	const edited = applyEdits(base, edits);
@@ -173,10 +194,11 @@ const outlineOptions = (colors: string[]) => {
 const usePalette = (picked: string) => {
 	slug = picked;
 	renderOptions(palette, slug);
-	tools.setColors(paletteOf(slug).colors);
-	outlineOptions(paletteOf(slug).colors);
+	if (!isFromImage(slug)) useColors(paletteOf(slug).colors);
 };
-usePalette(slug);
+renderOptions(palette, slug);
+tools.setColors(colors);
+outlineOptions(colors);
 
 // Big photos are shrunk once on load: the output is at most 256px, and shrinking a 24 MP photo on every crop drag
 // is too slow to follow the pointer. Crops and background clicks are in the shrunk image's pixels.
@@ -193,7 +215,7 @@ const applySettings = (p: Project) => {
 	dither.value = p.dither;
 	cap.value = p.cap ? String(p.cap) : "";
 	tolerance.value = String(Math.round((p.background ?? NO_BACKGROUND).tolerance * 100));
-	rememberPalette(p.slug, p.palette);
+	if (!isFromImage(p.slug)) rememberPalette(p.slug, p.palette);
 	usePalette(p.slug);
 	outline.value = p.outline ?? "";
 };
@@ -255,15 +277,15 @@ $<HTMLButtonElement>("save-png").addEventListener("click", async () => {
 	if (!sprite || !source) return;
 	const scale = Number($<HTMLSelectElement>("scale").value);
 	const suffix = scale === 1 ? "" : `@${scale}x`;
-	download(`${source.name}-${sprite.width}${suffix}.png`, await png(sprite, paletteOf(slug).colors, scale), "image/png");
+	download(`${source.name}-${sprite.width}${suffix}.png`, await png(sprite, colors, scale), "image/png");
 });
 $<HTMLButtonElement>("save-project").addEventListener("click", async () => {
 	const current = project();
 	if (current) download(`${current.name}${EXTENSION}`, await toFile(current), "application/json");
 });
 $<HTMLButtonElement>("save-gpl").addEventListener("click", () => {
-	const { name, colors } = paletteOf(slug);
-	download(`${slug}.gpl`, toGpl(name, colors), "text/plain");
+	const file = isFromImage(slug) ? `${source?.name ?? "image"}-palette` : slug;
+	download(`${file}.gpl`, toGpl(paletteName(), colors), "text/plain");
 });
 
 loadCurrent().then((saved) => {

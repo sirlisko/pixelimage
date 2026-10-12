@@ -62,12 +62,12 @@ const spriteTile = (x: number, colors: string[], size: number, dither: Dither) =
 	const { width, pixels } = render(img, {
 		crop: centredSquare(img),
 		size,
-		colors,
+		palette: { colors },
 		stretch: true,
 		dither,
 		cap: 0,
 		background: { seeds: [], tolerance: 0.1 },
-	});
+	}).sprite;
 	const paths = new Map<number, string>();
 	pixels.forEach((p, i) => {
 		if (p !== CLEAR) paths.set(p, `${paths.get(p) ?? ""}M${i % width} ${Math.floor(i / width)}h1v1h-1z`);

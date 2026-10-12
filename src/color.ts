@@ -32,6 +32,18 @@ export const oklabLinear = (lr: number, lg: number, lb: number): Lab => {
 	];
 };
 
+/** The inverse of `oklab`, clamped to sRGB. */
+export const fromOklab = ([L, a, b]: Lab): Rgb => {
+	const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+	const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+	const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+	return [
+		fromLinear(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+		fromLinear(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+		fromLinear(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s),
+	];
+};
+
 /** Perceptual lightness and hue axes, so "nearest" matches what the eye sees rather than RGB distance. */
 export const oklab = ([r, g, b]: Rgb): Lab => oklabLinear(LINEAR[r], LINEAR[g], LINEAR[b]);
 

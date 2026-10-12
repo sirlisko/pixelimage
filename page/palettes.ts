@@ -181,3 +181,20 @@ export const loadPalette = async (slug: string): Promise<Palette> => {
 	loaded.set(slug, palette);
 	return palette;
 };
+
+/**
+ * Palettes taken from the image, optionally limited to an old machine's colour depth: those machines could show any
+ * colour their hardware could make, so there's no fixed palette to pick from. Slugs start with "*", which Lospec
+ * slugs can't, so they never clash with a real palette.
+ */
+export const FROM_IMAGE: Record<string, { name: string; bits?: number }> = {
+	"*image": { name: "From the image" },
+	"*image-15bit": { name: "From the image, 15-bit (SNES, GBA, GBC)", bits: 5 },
+	"*image-12bit": { name: "From the image, 12-bit (Amiga)", bits: 4 },
+	"*image-9bit": { name: "From the image, 9-bit (Mega Drive)", bits: 3 },
+};
+
+/** How many colours a palette from the image has when Max colours is left empty. */
+export const IMAGE_COLOURS = 16;
+
+export const isFromImage = (slug: string) => slug in FROM_IMAGE;

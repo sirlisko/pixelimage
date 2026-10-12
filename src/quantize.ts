@@ -101,16 +101,21 @@ export interface Options {
 	dither?: Dither;
 	/** At most this many palette colours in the image. */
 	cap?: number;
+	/** Match by lightness alone. Defaults to whether the palette is shades of one hue. */
+	ramp?: boolean;
 }
 
-export const quantize = (prepared: Prepared, colors: string[], { dither = "none", cap }: Options = {}): Sprite => {
-	if (cap && cap < colors.length) return capped(prepared, colors, dither, cap);
-	return quantizeWith(prepared, colors, dither, isRamp(colors));
+export const quantize = (
+	prepared: Prepared,
+	colors: string[],
+	{ dither = "none", cap, ramp = isRamp(colors) }: Options = {},
+): Sprite => {
+	if (cap && cap < colors.length) return capped(prepared, colors, dither, cap, ramp);
+	return quantizeWith(prepared, colors, dither, ramp);
 };
 
 /** Picks the colours to keep from a plain conversion, then converts again with only those, dithering included. */
-const capped = (prepared: Prepared, colors: string[], dither: Dither, cap: number): Sprite => {
-	const ramp = isRamp(colors);
+const capped = (prepared: Prepared, colors: string[], dither: Dither, cap: number, ramp: boolean): Sprite => {
 	const plain = quantizeWith(prepared, colors, "none", ramp);
 	const kept = keepColors(usage(plain, colors.length), matcher(colors, ramp).labs, cap, ramp);
 	const sprite = quantizeWith(prepared, kept.map((i) => colors[i]), dither, ramp);
