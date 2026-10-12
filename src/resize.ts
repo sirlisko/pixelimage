@@ -72,3 +72,10 @@ export const downscale = (src: Img, rect: Rect, width: number, height: number): 
 	}
 	return out;
 };
+
+/** The image scaled down to fit `max` pixels on its long side, or the image itself if it already fits. */
+export const fitWithin = (img: Img, max: number): Img => {
+	const scale = max / Math.max(img.width, img.height);
+	if (scale >= 1) return img;
+	return downscale(img, { x: 0, y: 0, width: img.width, height: img.height }, Math.round(img.width * scale), Math.round(img.height * scale));
+};

@@ -5,6 +5,7 @@ import { toGpl } from "../src/gpl.ts";
 import { darkest, outline as addOutline } from "../src/outline.ts";
 import { fullRect, type Img, paint, type Rect, type Sprite } from "../src/image.ts";
 import { type Background, centredSquare, outputSize, renderer } from "../src/render.ts";
+import { fitWithin } from "../src/resize.ts";
 import { cropper } from "./crop.ts";
 import { editor } from "./editor.ts";
 import { download, png } from "./export.ts";
@@ -175,6 +176,10 @@ const usePalette = (picked: string) => {
 };
 usePalette(slug);
 
+// Big photos are shrunk once on load: the output is at most 256px, and shrinking a 24 MP photo on every crop drag
+// is too slow to follow the pointer. Crops and background clicks are in the shrunk image's pixels.
+const WORKING_SIZE = 2048;
+
 let loads = 0;
 
 const applySettings = (p: Project) => {
@@ -197,7 +202,7 @@ const show = async (blob: Blob, name: string, saved?: Project) => {
 	const ticket = ++loads;
 	let img: Img;
 	try {
-		img = await decode(blob);
+		img = fitWithin(await decode(blob), WORKING_SIZE);
 	} catch (err) {
 		if (ticket === loads) status.textContent = (err as Error).message;
 		return;

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { fullRect } from "../src/image.ts";
-import { downscale } from "../src/resize.ts";
+import { downscale, fitWithin } from "../src/resize.ts";
 import { image, pixel } from "./image.ts";
 
 const W = [255, 255, 255, 255] as [number, number, number, number];
@@ -39,5 +39,18 @@ describe("downscale", () => {
 		const dot = image([[W, K]]);
 		const out = downscale(dot, fullRect(dot), 4, 1);
 		expect([0, 1, 2, 3].map((x) => pixel(out, x, 0)[0])).toEqual([255, 255, 0, 0]);
+	});
+});
+
+describe("fitWithin", () => {
+	test("scales the long side down to the limit", () => {
+		const wide = image([Array.from({ length: 8 }, () => W)]);
+		const out = fitWithin(wide, 4);
+		expect([out.width, out.height]).toEqual([4, 1]);
+	});
+
+	test("leaves images that fit untouched", () => {
+		const small = image([[W, K]]);
+		expect(fitWithin(small, 4)).toBe(small);
 	});
 });
