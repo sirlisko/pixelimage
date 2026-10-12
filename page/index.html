@@ -55,8 +55,19 @@
 					<div class="crop"><span class="handle" title="Drag to resize"></span></div>
 				</div>
 			</div>
-			<div class="stage">
-				<canvas id="preview" width="32" height="32"></canvas>
+			<div class="stage editor">
+				<canvas id="preview" width="32" height="32" data-tool="pencil"></canvas>
+				<div class="tools" role="toolbar" aria-label="Edit pixels">
+					<button type="button" data-tool="pencil" aria-pressed="true" title="Pencil (B)">Pencil</button>
+					<button type="button" data-tool="eraser" aria-pressed="false" title="Eraser (E)">Eraser</button>
+					<button type="button" data-tool="fill" aria-pressed="false" title="Fill (G)">Fill</button>
+					<button type="button" data-tool="picker" aria-pressed="false" title="Pick a colour (I)">Picker</button>
+					<span class="sep"></span>
+					<button id="undo" type="button" title="Undo (⌘/Ctrl+Z)">Undo</button>
+					<button id="clear-edits" type="button">Clear edits</button>
+				</div>
+				<div id="swatches" class="swatches"></div>
+				<p class="hint">Edits are kept per crop, size and palette, so changing other settings keeps them.</p>
 			</div>
 		</div>
 		<fieldset class="export">

@@ -1,13 +1,16 @@
 import { squareCrop } from "../src/crop.ts";
 import type { Dither } from "../src/dither.ts";
+import { applyEdits, type Edits, editKey } from "../src/edits.ts";
 import { toGpl } from "../src/gpl.ts";
 import { fullRect, type Img, paint, type Rect, type Sprite } from "../src/image.ts";
-import { centredSquare, renderer } from "../src/render.ts";
+import { centredSquare, outputSize, renderer } from "../src/render.ts";
 import { cropper } from "./crop.ts";
+import { editor } from "./editor.ts";
 import { download, png } from "./export.ts";
 import { decode, listenForImages } from "./load.ts";
 import { renderOptions, wirePicker } from "./palette-picker.ts";
 import { paletteOf } from "./palettes.ts";
+import { wireTools } from "./tools.ts";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -31,6 +34,7 @@ let crop: Rect = { x: 0, y: 0, width: 1, height: 1 };
 let sourceUrl = "";
 let sourceName = "image";
 let sprite: Sprite | undefined;
+const store = new Map<string, Edits>();
 
 const chosenSize = () => (size.value === "custom" ? Math.min(256, Math.max(4, Number(custom.value) || 32)) : Number(size.value));
 
@@ -46,17 +50,34 @@ const crops = cropper($<HTMLDivElement>("source"), (next) => {
 	schedule();
 });
 
+const currentEdits = () => {
+	const { width, height } = outputSize({ crop, size: chosenSize() });
+	const key = editKey(crop, width, height, slug);
+	if (!store.has(key)) store.set(key, new Map());
+	return store.get(key) as Edits;
+};
+
+const edit = editor(preview, {
+	shown: () => sprite,
+	edits: currentEdits,
+	changed: schedule,
+	picked: (index) => tools.picked(index),
+});
+const tools = wireTools(preview.parentElement as HTMLElement, edit);
+tools.setColors(paletteOf(slug).colors);
+
 const update = () => {
 	$<HTMLLabelElement>("custom-field").hidden = size.value !== "custom";
 	if (!source) return;
 	const { colors } = paletteOf(slug);
-	sprite = render(source, {
+	const base = render(source, {
 		crop,
 		size: chosenSize(),
 		colors,
 		stretch: stretch.checked,
 		dither: dither.value as Dither,
 	});
+	sprite = applyEdits(base, currentEdits());
 	preview.width = sprite.width;
 	preview.height = sprite.height;
 	const img = paint(sprite, colors);
@@ -76,6 +97,7 @@ const open = async (file: File) => {
 	sourceName = file.name.replace(/\.[^.]+$/, "") || "image";
 	URL.revokeObjectURL(sourceUrl);
 	sourceUrl = URL.createObjectURL(file);
+	store.clear();
 	crop = initialCrop(source);
 	crops.show(sourceUrl, source, crop);
 	empty.hidden = true;
@@ -89,6 +111,7 @@ $<HTMLFormElement>("controls").addEventListener("input", (e) => {
 });
 wirePicker(palette, $("lospec"), $<HTMLInputElement>("lospec-slug"), (picked) => {
 	slug = picked;
+	tools.setColors(paletteOf(slug).colors);
 	schedule();
 });
 square.addEventListener("change", () => {
