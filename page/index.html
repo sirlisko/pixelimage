@@ -36,9 +36,22 @@
 				<label>Palette <select id="palette"></select></label>
 				<label class="inline"><input id="stretch" type="checkbox" checked> Stretch contrast</label>
 			</fieldset>
+			<fieldset>
+				<label class="inline"><input id="square" type="checkbox" checked> Square crop</label>
+				<button id="reset-crop" type="button">Reset crop</button>
+				<label class="file button">Replace image<input id="replace" type="file" accept="image/*"></label>
+			</fieldset>
 		</form>
-		<div class="stage">
-			<canvas id="preview" width="32" height="32"></canvas>
+		<div class="panes">
+			<div class="stage">
+				<div id="source" class="source">
+					<img alt="The image you loaded, with the crop marked">
+					<div class="crop"><span class="handle" title="Drag to resize"></span></div>
+				</div>
+			</div>
+			<div class="stage">
+				<canvas id="preview" width="32" height="32"></canvas>
+			</div>
 		</div>
 	</div>
 </main>

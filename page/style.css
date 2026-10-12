@@ -76,3 +76,36 @@ body.dragging .drop, body.dragging .stage { border-color: var(--accent); }
 	image-rendering: pixelated;
 	background: repeating-conic-gradient(var(--line) 0 25%, transparent 0 50%) 0 0 / 16px 16px;
 }
+.panes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.source { position: relative; overflow: hidden; touch-action: none; cursor: crosshair; user-select: none; line-height: 0; }
+.source img { display: block; max-width: 100%; max-height: 512px; pointer-events: none; }
+.crop {
+	position: absolute;
+	border: 1px solid #fff;
+	outline: 1px solid rgb(0 0 0 / 0.6);
+	box-shadow: 0 0 0 100vmax rgb(0 0 0 / 0.5);
+	cursor: move;
+}
+.handle {
+	position: absolute;
+	right: -7px;
+	bottom: -7px;
+	width: 14px;
+	height: 14px;
+	background: var(--accent);
+	border: 2px solid #fff;
+	border-radius: 2px;
+	cursor: nwse-resize;
+}
+.file.button {
+	display: inline-block;
+	font-size: 14px;
+	line-height: 1.5;
+	color: var(--fg);
+	text-decoration: none;
+	background: var(--card);
+	border: 1px solid var(--line);
+	border-radius: 4px;
+	padding: 6px 8px;
+}
+.file.button:hover { border-color: var(--accent); }

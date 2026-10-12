@@ -13,13 +13,15 @@ export const decode = async (blob: Blob): Promise<Img> => {
 
 const imageIn = (files: FileList | null | undefined) => [...(files ?? [])].find((f) => f.type.startsWith("image/"));
 
-/** Calls `onFile` for an image picked with `input`, pasted anywhere, or dropped anywhere on the page. */
-export const listenForImages = (input: HTMLInputElement, onFile: (file: File) => void) => {
-	input.addEventListener("change", () => {
-		const file = imageIn(input.files);
-		if (file) onFile(file);
-		input.value = "";
-	});
+/** Calls `onFile` for an image picked with one of `inputs`, pasted anywhere, or dropped anywhere on the page. */
+export const listenForImages = (inputs: HTMLInputElement[], onFile: (file: File) => void) => {
+	for (const input of inputs) {
+		input.addEventListener("change", () => {
+			const file = imageIn(input.files);
+			if (file) onFile(file);
+			input.value = "";
+		});
+	}
 	window.addEventListener("paste", (e) => {
 		if (e.target instanceof HTMLInputElement && e.target.type !== "file") return;
 		const file = imageIn(e.clipboardData?.files);
