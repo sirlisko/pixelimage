@@ -136,6 +136,11 @@ select { max-width: 280px; }
 .swatch.unused { opacity: 0.3; }
 .swatch.unused:hover, .swatch.unused[aria-pressed="true"] { opacity: 1; }
 .hint.notice { color: var(--accent); }
+kbd { font: inherit; padding: 0 4px; border: 1px solid var(--line); border-radius: 3px; background: var(--card); }
+/* Phones and tablets without a keyboard can't use them. */
+@media (hover: none) and (pointer: coarse) {
+	.keys { display: none; }
+}
 .about { margin-top: 48px; max-width: 72ch; }
 .about h2 { font-size: 16px; margin: 24px 0 8px; }
 .about p, .about li { color: var(--muted); }
