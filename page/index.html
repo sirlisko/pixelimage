@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>pixelimage — Turn any image into pixel art</title>
-<meta name="description" content="Turn any image into palette-limited pixel art. Crop it, pick a size and palette, touch up pixels and export a PNG.">
+<meta name="description" content="Turn any image into pixel art in a Game Boy, NES, PICO-8, Endesga 32 or any Lospec palette. Crop it, touch up pixels and export a PNG. Free, in your browser.">
 <meta name="author" content="Luca Lischetti">
 <link rel="canonical" href="https://pixelimage.sirlisko.com/">
 <meta name="theme-color" content="#f6f5f0" media="(prefers-color-scheme: light)">
@@ -14,16 +14,31 @@
 <meta property="og:url" content="https://pixelimage.sirlisko.com/">
 <meta property="og:locale" content="en">
 <meta property="og:title" content="pixelimage — Turn any image into pixel art">
-<meta property="og:description" content="Turn any image into palette-limited pixel art. Crop it, pick a size and palette, touch up pixels and export a PNG.">
+<meta property="og:description" content="Turn any image into pixel art in a Game Boy, NES, PICO-8, Endesga 32 or any Lospec palette. Crop it, touch up pixels and export a PNG. Free, in your browser.">
 <meta property="og:image" content="https://pixelimage.sirlisko.com/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="The word pixelimage in pixel letters above a photo of a lake and two pixel-art versions of it: Endesga 32 at 32 pixels and Game Boy at 64 pixels, dithered.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="pixelimage — Turn any image into pixel art">
-<meta name="twitter:description" content="Turn any image into palette-limited pixel art. Crop it, pick a size and palette, touch up pixels and export a PNG.">
+<meta name="twitter:description" content="Turn any image into pixel art in a Game Boy, NES, PICO-8, Endesga 32 or any Lospec palette. Crop it, touch up pixels and export a PNG. Free, in your browser.">
 <meta name="twitter:image" content="https://pixelimage.sirlisko.com/og.png">
 <meta name="twitter:image:alt" content="The word pixelimage in pixel letters above a photo of a lake and two pixel-art versions of it: Endesga 32 at 32 pixels and Game Boy at 64 pixels, dithered.">
+<script type="application/ld+json">
+{
+	"@context": "https://schema.org",
+	"@type": "WebApplication",
+	"name": "pixelimage",
+	"url": "https://pixelimage.sirlisko.com/",
+	"description": "Turn any image into pixel art in a Game Boy, NES, PICO-8, Endesga 32 or any Lospec palette. Crop it, touch up pixels and export a PNG. Free, in your browser.",
+	"image": "https://pixelimage.sirlisko.com/og.png",
+	"applicationCategory": "DesignApplication",
+	"operatingSystem": "Any",
+	"isAccessibleForFree": true,
+	"offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+	"author": { "@type": "Person", "name": "Luca Lischetti", "url": "https://sirlisko.com" }
+}
+</script>
 <script defer src="https://stats.sirlisko.com/script.js" data-website-id="7131b6d7-ad49-446c-aaf3-50b60d6d5f7c" data-domains="pixelimage.sirlisko.com" data-exclude-search="true" data-exclude-hash="true" data-do-not-track="true"></script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23d9480f' d='M1 1h6v6H1z'/%3E%3Cpath fill='%23fff' d='M2 2h2v2H2z'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="./style.css">
@@ -106,6 +121,23 @@
 		</fieldset>
 	</div>
 </main>
+
+<section class="about">
+	<h2>Pixel art from any image</h2>
+	<p>pixelimage turns a photo, cover or illustration into pixel art limited to a palette, as a starting point for your own sprite rather than a filter. Pick a size from 16 to 256 pixels and a palette from classic hardware (Game Boy, NES, Commodore 64, ZX Spectrum, PICO-8), from pixel artists (Endesga 32, DawnBringer, Sweetie 16) or any palette on <a href="https://lospec.com/palette-list">Lospec</a>.</p>
+	<p>Then clean it up: remove the background with a click, cap the number of colours, add a 1px outline and touch up pixels with a pencil, fill and picker that only paint in the palette. Export a PNG at 1× for Aseprite or scaled up for sharing, and the palette as a GIMP <code>.gpl</code>.</p>
+	<h2>Tips</h2>
+	<ul>
+		<li>Crop tight around the subject: at 32 pixels, every pixel counts.</li>
+		<li>Dithering suits palettes with few colours, like the Game Boy's. With 32 colours or more it mostly adds speckle.</li>
+		<li>Photos and illustrations work best. Screenshots of text and dark gradients don't.</li>
+		<li>Everything runs in your browser: images are never uploaded.</li>
+	</ul>
+</section>
+
+<footer>
+	Made by <a href="https://sirlisko.com">sirlisko</a> · <a href="https://github.com/sirlisko/pixelimage">GitHub</a> · palettes from <a href="https://lospec.com/palette-list">Lospec</a> · see also <a href="https://pixelicons.sirlisko.com">pixelicons</a>, for icons
+</footer>
 <script type="module" src="./main.ts"></script>
 </body>
 </html>
