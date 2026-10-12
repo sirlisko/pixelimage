@@ -9,7 +9,8 @@ import { editor } from "./editor.ts";
 import { download, png } from "./export.ts";
 import { decode, listenForImages } from "./load.ts";
 import { renderOptions, wirePicker } from "./palette-picker.ts";
-import { paletteOf } from "./palettes.ts";
+import { paletteOf, rememberPalette } from "./palettes.ts";
+import { loadCurrent, packEdits, type Project, saveCurrent, unpackEdits } from "./project.ts";
 import { wireTools } from "./tools.ts";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -29,12 +30,10 @@ let slug = "endesga-32";
 renderOptions(palette, slug);
 
 const render = renderer();
-let source: Img | undefined;
+let source: { img: Img; blob: Blob; name: string; url: string } | undefined;
 let crop: Rect = { x: 0, y: 0, width: 1, height: 1 };
-let sourceUrl = "";
-let sourceName = "image";
 let sprite: Sprite | undefined;
-const store = new Map<string, Edits>();
+let store = new Map<string, Edits>();
 
 const chosenSize = () => (size.value === "custom" ? Math.min(256, Math.max(4, Number(custom.value) || 32)) : Number(size.value));
 
@@ -66,11 +65,35 @@ const edit = editor(preview, {
 const tools = wireTools(preview.parentElement as HTMLElement, edit);
 tools.setColors(paletteOf(slug).colors);
 
+const project = (): Project | undefined =>
+	source && {
+		name: source.name,
+		image: source.blob,
+		crop,
+		square: square.checked,
+		size: size.value,
+		custom: Number(custom.value),
+		slug,
+		palette: paletteOf(slug),
+		stretch: stretch.checked,
+		dither: dither.value as Dither,
+		edits: packEdits(store),
+	};
+
+let saving = 0;
+const autosave = () => {
+	clearTimeout(saving);
+	saving = window.setTimeout(() => {
+		const current = project();
+		if (current) saveCurrent(current);
+	}, 500);
+};
+
 const update = () => {
 	$<HTMLLabelElement>("custom-field").hidden = size.value !== "custom";
 	if (!source) return;
 	const { colors } = paletteOf(slug);
-	const base = render(source, {
+	const base = render(source.img, {
 		crop,
 		size: chosenSize(),
 		colors,
@@ -82,36 +105,57 @@ const update = () => {
 	preview.height = sprite.height;
 	const img = paint(sprite, colors);
 	(preview.getContext("2d") as CanvasRenderingContext2D).putImageData(new ImageData(img.data, img.width), 0, 0);
+	autosave();
 };
 
 const initialCrop = (img: Img) => (square.checked ? centredSquare(img) : fullRect(img));
 
-const open = async (file: File) => {
+const usePalette = (picked: string) => {
+	slug = picked;
+	renderOptions(palette, slug);
+	tools.setColors(paletteOf(slug).colors);
+};
+
+/** Shows an image, with the crop and edits it was saved with, or fresh ones. */
+const show = async (blob: Blob, name: string, saved?: Pick<Project, "crop" | "edits">) => {
 	status.textContent = "";
+	let img: Img;
 	try {
-		source = await decode(file);
+		img = await decode(blob);
 	} catch (err) {
 		status.textContent = (err as Error).message;
 		return;
 	}
-	sourceName = file.name.replace(/\.[^.]+$/, "") || "image";
-	URL.revokeObjectURL(sourceUrl);
-	sourceUrl = URL.createObjectURL(file);
-	store.clear();
-	crop = initialCrop(source);
-	crops.show(sourceUrl, source, crop);
+	if (source) URL.revokeObjectURL(source.url);
+	source = { img, blob, name, url: URL.createObjectURL(blob) };
+	store = saved ? unpackEdits(saved.edits) : new Map();
+	crop = saved?.crop ?? initialCrop(img);
+	crops.show(source.url, img, crop);
 	empty.hidden = true;
 	workspace.hidden = false;
 	update();
 };
 
-listenForImages([$<HTMLInputElement>("file"), $<HTMLInputElement>("replace")], open);
+const restore = (p: Project) => {
+	square.checked = p.square;
+	crops.setSquare(p.square);
+	size.value = p.size;
+	custom.value = String(p.custom);
+	stretch.checked = p.stretch;
+	dither.value = p.dither;
+	rememberPalette(p.slug, p.palette);
+	usePalette(p.slug);
+	return show(p.image, p.name, p);
+};
+
+listenForImages([$<HTMLInputElement>("file"), $<HTMLInputElement>("replace")], (file) =>
+	show(file, file.name.replace(/\.[^.]+$/, "") || "image"),
+);
 $<HTMLFormElement>("controls").addEventListener("input", (e) => {
 	if (e.target !== palette) schedule();
 });
 wirePicker(palette, $("lospec"), $<HTMLInputElement>("lospec-slug"), (picked) => {
-	slug = picked;
-	tools.setColors(paletteOf(slug).colors);
+	usePalette(picked);
 	schedule();
 });
 square.addEventListener("change", () => {
@@ -119,16 +163,20 @@ square.addEventListener("change", () => {
 	if (square.checked) crops.set(squareCrop(crop));
 });
 $<HTMLButtonElement>("reset-crop").addEventListener("click", () => {
-	if (source) crops.set(initialCrop(source));
+	if (source) crops.set(initialCrop(source.img));
 });
 
 $<HTMLButtonElement>("save-png").addEventListener("click", async () => {
-	if (!sprite) return;
+	if (!sprite || !source) return;
 	const scale = Number($<HTMLSelectElement>("scale").value);
 	const suffix = scale === 1 ? "" : `@${scale}x`;
-	download(`${sourceName}-${sprite.width}${suffix}.png`, await png(sprite, paletteOf(slug).colors, scale), "image/png");
+	download(`${source.name}-${sprite.width}${suffix}.png`, await png(sprite, paletteOf(slug).colors, scale), "image/png");
 });
 $<HTMLButtonElement>("save-gpl").addEventListener("click", () => {
 	const { name, colors } = paletteOf(slug);
 	download(`${slug}.gpl`, toGpl(name, colors), "text/plain");
+});
+
+loadCurrent().then((saved) => {
+	if (saved && !source) restore(saved);
 });

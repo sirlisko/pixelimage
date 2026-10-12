@@ -28,6 +28,10 @@ const loaded = new Map<string, Palette>();
 export const paletteOf = (slug: string) => PALETTES[slug] ?? loaded.get(slug);
 /** Palettes loaded from Lospec this session, for the picker. */
 export const loadedPalettes = () => [...loaded];
+/** Brings back a Lospec palette saved with a project, without fetching it. */
+export const rememberPalette = (slug: string, palette: Palette) => {
+	if (!paletteOf(slug)) loaded.set(slug, palette);
+};
 
 /** Accepts a Lospec slug or a link to the palette's Lospec page. */
 export const slugOf = (input: string) =>
